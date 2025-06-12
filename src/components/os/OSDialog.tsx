@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
@@ -56,6 +56,9 @@ export const OSDialog: React.FC<OSDialogProps> = ({
           <DialogTitle>
             {editingOS ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}
           </DialogTitle>
+          <DialogDescription>
+            {!editingOS && "Preencha os dados para criar uma nova ordem de serviço. Para composições, você pode criar automaticamente uma OS Stand-by para o veículo."}
+          </DialogDescription>
         </DialogHeader>
         
         {validationError && (

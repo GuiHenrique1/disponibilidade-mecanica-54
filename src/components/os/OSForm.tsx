@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +31,16 @@ export const OSForm: React.FC<OSFormProps> = ({
   onVeiculoChange,
   onComposicaoChange
 }) => {
+  // Verificar se deve mostrar o checkbox Stand-by
+  const showStandByCheckbox = formData.tipoVeiculo === 'composicao' && 
+                              formData.composicaoId && 
+                              !editingOS;
+
+  console.log('Exibir checkbox Stand-by:', showStandByCheckbox);
+  console.log('Tipo de veículo:', formData.tipoVeiculo);
+  console.log('Composição ID:', formData.composicaoId);
+  console.log('Editando OS:', !!editingOS);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -94,16 +103,17 @@ export const OSForm: React.FC<OSFormProps> = ({
         />
       </div>
 
-      {formData.tipoVeiculo === 'composicao' && formData.composicaoId && !editingOS && (
-        <div className="md:col-span-2 flex items-center space-x-2">
+      {showStandByCheckbox && (
+        <div className="md:col-span-2 flex items-center space-x-2 p-3 border rounded-md bg-blue-50">
           <Checkbox
             id="criarStandBy"
             checked={formData.criarStandBy}
-            onCheckedChange={(checked) => 
-              setFormData({...formData, criarStandBy: checked as boolean})
-            }
+            onCheckedChange={(checked) => {
+              console.log('Checkbox alterado para:', checked);
+              setFormData({...formData, criarStandBy: checked as boolean});
+            }}
           />
-          <Label htmlFor="criarStandBy" className="text-sm">
+          <Label htmlFor="criarStandBy" className="text-sm font-medium">
             Abrir OS Stand-by para Veículo
           </Label>
         </div>

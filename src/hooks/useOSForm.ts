@@ -151,17 +151,31 @@ export const useOSForm = (
           description: "Ordem de serviço atualizada com sucesso."
         });
       } else {
+        // Criar a OS principal
         const novaOS = dataService.addOrdemServico(osData);
+        console.log('OS criada:', novaOS);
+        console.log('Criar Stand-by:', formData.criarStandBy);
+        console.log('Tipo de veículo:', formData.tipoVeiculo);
+        console.log('Composição ID:', formData.composicaoId);
         
+        // Verificar se deve criar OS Stand-by
         if (formData.criarStandBy && formData.tipoVeiculo === 'composicao' && formData.composicaoId) {
+          console.log('Iniciando criação de OS Stand-by...');
+          
           const composicao = composicoes.find(c => c.id === formData.composicaoId);
+          console.log('Composição encontrada:', composicao);
           
           if (composicao && composicao.primeiraComposicao) {
+            // Buscar o cavalo mecânico pela placa da primeira composição
             const cavaloStandBy = cavalos.find(c => c.placa === composicao.primeiraComposicao);
+            console.log('Cavalo para Stand-by encontrado:', cavaloStandBy);
             
             if (cavaloStandBy) {
               // Verificar se o cavalo já tem uma OS aberta antes de criar a stand-by
-              const standByError = validateUniqueOS(ordensServico, cavaloStandBy.id, 'frota', cavalos, composicoes);
+              const ordensAtual = dataService.getOrdensServico(); // Buscar dados atualizados
+              const standByError = validateUniqueOS(ordensAtual, cavaloStandBy.id, 'frota', cavalos, composicoes);
+              console.log('Erro de validação Stand-by:', standByError);
+              
               if (!standByError) {
                 const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
                   tipoVeiculo: 'frota',
@@ -178,23 +192,34 @@ export const useOSForm = (
                   composicaoOrigemId: formData.composicaoId
                 };
                 
-                dataService.addOrdemServico(osStandBy);
+                console.log('Criando OS Stand-by com dados:', osStandBy);
+                const osStandByCriada = dataService.addOrdemServico(osStandBy);
+                console.log('OS Stand-by criada:', osStandByCriada);
+                
                 toast({
                   title: "Sucesso",
                   description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
                 });
               } else {
+                console.log('Não foi possível criar Stand-by:', standByError);
                 toast({
                   title: "Aviso",
                   description: `OS da composição criada, mas não foi possível criar a OS Stand-by: ${standByError}`
                 });
               }
             } else {
+              console.log('Cavalo mecânico não encontrado para a placa:', composicao.primeiraComposicao);
               toast({
                 title: "Aviso",
-                description: "OS da composição criada, mas não foi possível criar a OS Stand-by do veículo."
+                description: "OS da composição criada, mas não foi possível encontrar o cavalo mecânico para criar a OS Stand-by."
               });
             }
+          } else {
+            console.log('Composição não encontrada ou sem primeira composição');
+            toast({
+              title: "Aviso", 
+              description: "OS da composição criada, mas não foi possível criar a OS Stand-by: dados da composição incompletos."
+            });
           }
         } else {
           toast({
@@ -203,6 +228,7 @@ export const useOSForm = (
           });
         }
         
+        // Atualizar a lista de OS
         setOrdensServico(dataService.getOrdensServico());
       }
 
@@ -210,6 +236,7 @@ export const useOSForm = (
       setEditingOS(null);
       setIsDialogOpen(false);
     } catch (error) {
+      console.error('Erro ao salvar OS:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar ordem de serviço.",
