@@ -1,4 +1,3 @@
-
 import { CavaloMecanico, Composicao, Motorista, OrdemServico } from '@/types';
 
 class DataService {
@@ -128,14 +127,21 @@ class DataService {
 
     for (const line of lines) {
       const parts = line.trim().split(/\s+/);
-      if (parts.length >= 2) {
+      if (parts.length >= 3) {
         const identificador = parts[0];
-        const placas = parts.slice(1);
+        const primeiraComposicao = parts[1];
+        const segundaComposicao = parts[2];
+        const placas = parts.slice(1); // All parts after identificador
         
         // Verificar se já existe
         const exists = composicoes.some(c => c.identificador === identificador);
         if (!exists) {
-          this.addComposicao({ identificador, placas });
+          this.addComposicao({ 
+            identificador, 
+            placas,
+            primeiraComposicao,
+            segundaComposicao
+          });
           success++;
         } else {
           errors.push(`Composição ${identificador} já existe`);
