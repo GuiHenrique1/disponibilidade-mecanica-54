@@ -16,7 +16,7 @@ export function calcularDisponibilidade(
       if (os.tipoVeiculo !== tipoVeiculo) return false;
       
       // Verificar se a OS está em status que causa indisponibilidade
-      const statusIndisponivel = ['Aberta', 'Em Andamento', 'Aguardando Peça'].includes(os.status);
+      const statusIndisponivel = ['Aberta'].includes(os.status);
       if (!statusIndisponivel) return false;
 
       // Criar data/hora de abertura
@@ -62,8 +62,6 @@ export function calcularDisponibilidade(
 export function calcularEstatisticasOS(ordensServico: OrdemServico[]): any {
   const totalOS = ordensServico.length;
   const osAbertas = ordensServico.filter(os => os.status === 'Aberta').length;
-  const osEmAndamento = ordensServico.filter(os => os.status === 'Em Andamento').length;
-  const osAguardandoPeca = ordensServico.filter(os => os.status === 'Aguardando Peça').length;
   const osConcluidas = ordensServico.filter(os => os.status === 'Concluída').length;
   const osCanceladas = ordensServico.filter(os => os.status === 'Cancelada').length;
 
@@ -90,8 +88,8 @@ export function calcularEstatisticasOS(ordensServico: OrdemServico[]): any {
   return {
     totalOS,
     osAbertas,
-    osEmAndamento,
-    osAguardandoPeca,
+    osEmAndamento: 0, // Removido mas mantendo para compatibilidade
+    osAguardandoPeca: 0, // Removido mas mantendo para compatibilidade
     osConcluidas,
     osCanceladas,
     tempoMedioResolucao
