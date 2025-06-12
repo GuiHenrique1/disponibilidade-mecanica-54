@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,15 +45,19 @@ export const Composicoes: React.FC = () => {
         ? linha.trim().split('\t').filter(p => p.trim())
         : linha.trim().split(/\s+/).filter(p => p.trim());
       
-      if (partes.length >= 2) {
+      if (partes.length >= 3) {
         const identificador = partes[0].trim();
-        const placas = partes.slice(1).map(p => p.trim()).filter(p => p);
+        const primeira = partes[1].trim();
+        const segunda = partes[2].trim();
+        const placas = [primeira, segunda];
 
         if (identificador && placas.length > 0 && !composicoes.some(c => c.identificador === identificador)) {
           novasComposicoes.push({
             id: crypto.randomUUID(),
             identificador,
             placas,
+            primeiraComposicao: primeira,
+            segundaComposicao: segunda,
             createdAt: new Date()
           });
         }
@@ -93,6 +98,8 @@ export const Composicoes: React.FC = () => {
       id: crypto.randomUUID(),
       identificador: newComposicaoId.trim(),
       placas,
+      primeiraComposicao: primeiraComposicao.trim(),
+      segundaComposicao: segundaComposicao.trim(),
       createdAt: new Date()
     };
 
@@ -117,7 +124,9 @@ export const Composicoes: React.FC = () => {
       c.id === composicao.id ? { 
         ...c, 
         identificador: newComposicaoId.trim(),
-        placas 
+        placas,
+        primeiraComposicao: primeiraComposicao.trim(),
+        segundaComposicao: segundaComposicao.trim()
       } : c
     );
 
