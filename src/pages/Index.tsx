@@ -6,6 +6,7 @@ import { Composicoes } from '@/components/Composicoes';
 import { Motoristas } from '@/components/Motoristas';
 import { OrdensServico } from '@/components/OrdensServico';
 import { DisponibilidadeMecanica } from '@/components/DisponibilidadeMecanica';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { AppProvider } from '@/contexts/AppContext';
 
 const IndexContent = () => {
@@ -31,6 +32,7 @@ const IndexContent = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <ThemeToggle />
       <main className="container mx-auto">
         {renderContent()}
       </main>

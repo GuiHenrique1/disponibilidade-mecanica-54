@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -203,7 +202,7 @@ export const useOSForm = (
                 horaAbertura,
                 dataFechamento: dataFechamento || undefined,
                 horaFechamento: horaFechamento || undefined,
-                tipoManutencao: formData.tipoManutencao,
+                tipoManutencao: 'STAND-BY', // Definir automaticamente como STAND-BY
                 descricaoServico: `STAND-BY ${composicao?.identificador || ''} - ${formData.descricaoServico}`,
                 status: formData.status,
                 isStandBy: true,
