@@ -25,6 +25,7 @@ export const OrdensServico: React.FC = () => {
   const [formData, setFormData] = useState({
     tipoVeiculo: '' as 'frota' | 'composicao' | '',
     veiculoId: '',
+    composicaoId: '',
     placaReferente: '',
     dataAbertura: '',
     horaAbertura: '',
@@ -40,6 +41,7 @@ export const OrdensServico: React.FC = () => {
     setFormData({
       tipoVeiculo: '',
       veiculoId: '',
+      composicaoId: '',
       placaReferente: '',
       dataAbertura: '',
       horaAbertura: '',
@@ -64,23 +66,6 @@ export const OrdensServico: React.FC = () => {
     return `${day}-${month}-${year}`;
   };
 
-  const getVeiculoOptions = () => {
-    if (formData.tipoVeiculo === 'frota') {
-      return cavalos.map(cavalo => ({
-        value: cavalo.id,
-        label: cavalo.nomeFreota,
-        placa: cavalo.placa
-      }));
-    } else if (formData.tipoVeiculo === 'composicao') {
-      return composicoes.map(composicao => ({
-        value: composicao.id,
-        label: composicao.identificador,
-        placas: composicao.placas
-      }));
-    }
-    return [];
-  };
-
   const getVeiculoLabel = (veiculoId: string, tipoVeiculo: 'frota' | 'composicao') => {
     if (tipoVeiculo === 'frota') {
       const cavalo = cavalos.find(c => c.id === veiculoId);
@@ -96,34 +81,35 @@ export const OrdensServico: React.FC = () => {
       ...formData,
       tipoVeiculo: tipo,
       veiculoId: '',
+      composicaoId: '',
       placaReferente: '',
       criarStandBy: false
     });
   };
 
   const handleVeiculoChange = (veiculoId: string) => {
-    const options = getVeiculoOptions();
-    const selectedOption = options.find(opt => opt.value === veiculoId);
-    
-    let placaReferente = '';
-    if (selectedOption) {
-      if (formData.tipoVeiculo === 'frota') {
-        placaReferente = (selectedOption as any).placa;
-      } else {
-        placaReferente = (selectedOption as any).placas.join(', ');
-      }
-    }
-
+    const cavalo = cavalos.find(c => c.id === veiculoId);
     setFormData({
       ...formData,
       veiculoId,
-      placaReferente
+      placaReferente: cavalo ? cavalo.placa : ''
+    });
+  };
+
+  const handleComposicaoChange = (composicaoId: string) => {
+    const composicao = composicoes.find(c => c.id === composicaoId);
+    setFormData({
+      ...formData,
+      composicaoId,
+      placaReferente: composicao ? composicao.placas.join(', ') : ''
     });
   };
 
   const handleSubmit = () => {
     // Validações
-    if (!formData.tipoVeiculo || !formData.veiculoId || !formData.dataAbertura || 
+    const selectedVehicleId = formData.tipoVeiculo === 'frota' ? formData.veiculoId : formData.composicaoId;
+    
+    if (!formData.tipoVeiculo || !selectedVehicleId || !formData.dataAbertura || 
         !formData.horaAbertura || !formData.tipoManutencao || !formData.status) {
       toast({
         title: "Erro",
@@ -135,7 +121,7 @@ export const OrdensServico: React.FC = () => {
 
     const osData: Omit<OrdemServico, 'id' | 'createdAt'> = {
       tipoVeiculo: formData.tipoVeiculo,
-      veiculoId: formData.veiculoId,
+      veiculoId: selectedVehicleId,
       placaReferente: formData.placaReferente,
       dataAbertura: formatDateForStorage(formData.dataAbertura),
       horaAbertura: formData.horaAbertura,
@@ -158,17 +144,35 @@ export const OrdensServico: React.FC = () => {
         const novaOS = dataService.addOrdemServico(osData);
         
         // Criar OS Stand-by se solicitado
-        if (formData.criarStandBy && formData.tipoVeiculo === 'composicao') {
-          const osStandBy = dataService.criarOSStandBy(formData.veiculoId, osData);
-          if (osStandBy) {
+        if (formData.criarStandBy && formData.tipoVeiculo === 'composicao' && formData.veiculoId) {
+          const cavaloStandBy = cavalos.find(c => c.id === formData.veiculoId);
+          const composicao = composicoes.find(c => c.id === formData.composicaoId);
+          
+          if (cavaloStandBy && composicao) {
+            const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
+              tipoVeiculo: 'frota',
+              veiculoId: cavaloStandBy.id,
+              placaReferente: cavaloStandBy.placa,
+              dataAbertura: formatDateForStorage(formData.dataAbertura),
+              horaAbertura: formData.horaAbertura,
+              dataFechamento: formData.dataFechamento ? formatDateForStorage(formData.dataFechamento) : undefined,
+              horaFechamento: formData.horaFechamento || undefined,
+              tipoManutencao: formData.tipoManutencao,
+              descricaoServico: `STAND-BY ${composicao.identificador} - ${formData.descricaoServico}`,
+              status: formData.status,
+              isStandBy: true,
+              composicaoOrigemId: formData.composicaoId
+            };
+            
+            dataService.addOrdemServico(osStandBy);
             toast({
               title: "Sucesso",
-              description: "Ordem de serviço e OS Stand-by criadas com sucesso."
+              description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
             });
           } else {
             toast({
               title: "Aviso",
-              description: "Ordem de serviço criada, mas não foi possível criar a OS Stand-by."
+              description: "OS da composição criada, mas não foi possível criar a OS Stand-by do veículo."
             });
           }
         } else {
@@ -197,7 +201,8 @@ export const OrdensServico: React.FC = () => {
     setEditingOS(os);
     setFormData({
       tipoVeiculo: os.tipoVeiculo,
-      veiculoId: os.veiculoId,
+      veiculoId: os.tipoVeiculo === 'frota' ? os.veiculoId : '',
+      composicaoId: os.tipoVeiculo === 'composicao' ? os.veiculoId : '',
       placaReferente: os.placaReferente,
       dataAbertura: formatDateForInput(os.dataAbertura),
       horaAbertura: os.horaAbertura,
@@ -269,27 +274,70 @@ export const OrdensServico: React.FC = () => {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="veiculo">
-                  {formData.tipoVeiculo === 'frota' ? 'Nome da Frota' : 'Composição'} *
-                </Label>
-                <Select 
-                  value={formData.veiculoId} 
-                  onValueChange={handleVeiculoChange}
-                  disabled={!formData.tipoVeiculo}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getVeiculoOptions().map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {formData.tipoVeiculo === 'frota' && (
+                <div>
+                  <Label htmlFor="veiculo">Nome da Frota *</Label>
+                  <Select 
+                    value={formData.veiculoId} 
+                    onValueChange={handleVeiculoChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a frota..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cavalos.map(cavalo => (
+                        <SelectItem key={cavalo.id} value={cavalo.id}>
+                          {cavalo.nomeFreota}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formData.tipoVeiculo === 'composicao' && (
+                <div>
+                  <Label htmlFor="composicao">Composição *</Label>
+                  <Select 
+                    value={formData.composicaoId} 
+                    onValueChange={handleComposicaoChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a composição..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {composicoes.map(composicao => (
+                        <SelectItem key={composicao.id} value={composicao.id}>
+                          {composicao.identificador}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formData.tipoVeiculo === 'composicao' && formData.composicaoId && !editingOS && (
+                <div>
+                  <Label htmlFor="veiculoStandBy">Veículo para Stand-by (Opcional)</Label>
+                  <div className="flex items-center space-x-2">
+                    <Select 
+                      value={formData.veiculoId} 
+                      onValueChange={(value) => setFormData({...formData, veiculoId: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o veículo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cavalos.map(cavalo => (
+                          <SelectItem key={cavalo.id} value={cavalo.id}>
+                            {cavalo.nomeFreota}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
 
               <div className="md:col-span-2">
                 <Label htmlFor="placaReferente">Placa(s) Referente(s)</Label>
@@ -301,6 +349,21 @@ export const OrdensServico: React.FC = () => {
                   placeholder="Será preenchido automaticamente"
                 />
               </div>
+
+              {formData.tipoVeiculo === 'composicao' && formData.veiculoId && !editingOS && (
+                <div className="md:col-span-2 flex items-center space-x-2">
+                  <Checkbox
+                    id="criarStandBy"
+                    checked={formData.criarStandBy}
+                    onCheckedChange={(checked) => 
+                      setFormData({...formData, criarStandBy: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="criarStandBy" className="text-sm">
+                    Abrir OS Stand-by para o veículo selecionado
+                  </Label>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="dataAbertura">Data Abertura *</Label>
@@ -383,21 +446,6 @@ export const OrdensServico: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-
-              {formData.tipoVeiculo === 'composicao' && !editingOS && (
-                <div className="md:col-span-2 flex items-center space-x-2">
-                  <Checkbox
-                    id="criarStandBy"
-                    checked={formData.criarStandBy}
-                    onCheckedChange={(checked) => 
-                      setFormData({...formData, criarStandBy: checked as boolean})
-                    }
-                  />
-                  <Label htmlFor="criarStandBy">
-                    Abrir OS Stand-by para Veículo
-                  </Label>
-                </div>
-              )}
 
               <div className="md:col-span-2">
                 <Label htmlFor="descricao">Descrição do Serviço</Label>
