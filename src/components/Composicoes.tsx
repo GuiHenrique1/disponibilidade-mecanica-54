@@ -15,7 +15,8 @@ export const Composicoes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [importText, setImportText] = useState('');
   const [newComposicaoId, setNewComposicaoId] = useState('');
-  const [newComposicaoPlacas, setNewComposicaoPlacas] = useState('');
+  const [primeiraComposicao, setPrimeiraComposicao] = useState('');
+  const [segundaComposicao, setSegundaComposicao] = useState('');
   const [editingComposicao, setEditingComposicao] = useState<Composicao | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -39,7 +40,6 @@ export const Composicoes: React.FC = () => {
     const novasComposicoes: Composicao[] = [];
 
     linhas.forEach(linha => {
-      // Dividir por tabs primeiro, depois por espaços múltiplos se não houver tabs
       const partes = linha.includes('\t') 
         ? linha.trim().split('\t').filter(p => p.trim())
         : linha.trim().split(/\s+/).filter(p => p.trim());
@@ -69,7 +69,7 @@ export const Composicoes: React.FC = () => {
   };
 
   const handleAddComposicao = () => {
-    if (!newComposicaoId.trim() || !newComposicaoPlacas.trim()) {
+    if (!newComposicaoId.trim() || !primeiraComposicao.trim() || !segundaComposicao.trim()) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos.",
@@ -87,7 +87,7 @@ export const Composicoes: React.FC = () => {
       return;
     }
 
-    const placas = newComposicaoPlacas.trim().split(/\s+/).filter(p => p.trim());
+    const placas = [primeiraComposicao.trim(), segundaComposicao.trim()];
     
     const novaComposicao: Composicao = {
       id: crypto.randomUUID(),
@@ -98,7 +98,8 @@ export const Composicoes: React.FC = () => {
 
     setComposicoes([...composicoes, novaComposicao]);
     setNewComposicaoId('');
-    setNewComposicaoPlacas('');
+    setPrimeiraComposicao('');
+    setSegundaComposicao('');
     setIsDialogOpen(false);
     
     toast({
@@ -108,9 +109,9 @@ export const Composicoes: React.FC = () => {
   };
 
   const handleEditComposicao = (composicao: Composicao) => {
-    if (!newComposicaoId.trim() || !newComposicaoPlacas.trim()) return;
+    if (!newComposicaoId.trim() || !primeiraComposicao.trim() || !segundaComposicao.trim()) return;
 
-    const placas = newComposicaoPlacas.trim().split(/\s+/).filter(p => p.trim());
+    const placas = [primeiraComposicao.trim(), segundaComposicao.trim()];
     
     const updatedComposicoes = composicoes.map(c =>
       c.id === composicao.id ? { 
@@ -123,7 +124,8 @@ export const Composicoes: React.FC = () => {
     setComposicoes(updatedComposicoes);
     setEditingComposicao(null);
     setNewComposicaoId('');
-    setNewComposicaoPlacas('');
+    setPrimeiraComposicao('');
+    setSegundaComposicao('');
     setIsDialogOpen(false);
     
     toast({
@@ -198,7 +200,8 @@ export const Composicoes: React.FC = () => {
               <Button onClick={() => {
                 setEditingComposicao(null);
                 setNewComposicaoId('');
-                setNewComposicaoPlacas('');
+                setPrimeiraComposicao('');
+                setSegundaComposicao('');
               }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Composição
@@ -212,7 +215,7 @@ export const Composicoes: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="identificador">Identificador</Label>
+                  <Label htmlFor="identificador">Composição</Label>
                   <Input
                     id="identificador"
                     value={newComposicaoId}
@@ -221,12 +224,21 @@ export const Composicoes: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="placas">Placas (separadas por espaço)</Label>
+                  <Label htmlFor="primeira">1ª Composição</Label>
                   <Input
-                    id="placas"
-                    value={newComposicaoPlacas}
-                    onChange={(e) => setNewComposicaoPlacas(e.target.value)}
-                    placeholder="Ex: QAH0J25 QAH0J27"
+                    id="primeira"
+                    value={primeiraComposicao}
+                    onChange={(e) => setPrimeiraComposicao(e.target.value)}
+                    placeholder="Ex: QAH0J25"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="segunda">2ª Composição</Label>
+                  <Input
+                    id="segunda"
+                    value={segundaComposicao}
+                    onChange={(e) => setSegundaComposicao(e.target.value)}
+                    placeholder="Ex: QAH0J27"
                   />
                 </div>
                 <Button 
@@ -270,7 +282,8 @@ export const Composicoes: React.FC = () => {
                         onClick={() => {
                           setEditingComposicao(composicao);
                           setNewComposicaoId(composicao.identificador);
-                          setNewComposicaoPlacas(composicao.placas.join(' '));
+                          setPrimeiraComposicao(composicao.placas[0] || '');
+                          setSegundaComposicao(composicao.placas[1] || '');
                           setIsDialogOpen(true);
                         }}
                       >

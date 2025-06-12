@@ -28,9 +28,9 @@ export interface OrdemServico {
   horaAbertura: string; // HH:MM
   dataFechamento?: string;
   horaFechamento?: string;
-  tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'Outros';
+  tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'SOS' | 'TERMAC' | 'ITR' | 'Outros';
   descricaoServico: string;
-  status: 'Aberta' | 'Em Andamento' | 'Aguardando Peça' | 'Concluída' | 'Cancelada';
+  status: 'Aberta' | 'Concluída' | 'Cancelada';
   isStandBy?: boolean; // Indica se é uma OS stand-by
   composicaoOrigemId?: string; // ID da composição que originou esta OS stand-by
   createdAt: Date;
