@@ -9,7 +9,8 @@ export interface CavaloMecanico {
 export interface Composicao {
   id: string;
   identificador: string; // ex: C01, C02
-  placas: string[]; // ex: ['QAH0J25', 'QAH0J27']
+  primeiraComposicao: string; // ex: 'QAH0J25'
+  segundaComposicao: string; // ex: 'QAH0J27'
   createdAt: Date;
 }
 
