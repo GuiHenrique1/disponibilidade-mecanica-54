@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -112,6 +113,16 @@ export const useOSForm = (
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validação obrigatória: Se o status for "Concluída", deve ter data/hora de fechamento
+    if (formData.status === 'Concluída' && !formData.dataHoraFechamento) {
+      toast({
+        title: "Erro",
+        description: "Para OSs com status 'Concluída', a data e hora de fechamento são obrigatórias.",
         variant: "destructive"
       });
       return;

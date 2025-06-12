@@ -16,7 +16,9 @@ export function calcularDisponibilidade(
       if (os.tipoVeiculo !== tipoVeiculo) return false;
       
       // Verificar se a OS está em status que causa indisponibilidade
-      const statusIndisponivel = ['Aberta'].includes(os.status);
+      // Apenas "Aberta" e "Concluída" causam indisponibilidade
+      // OSs "Cancelada" são ignoradas completamente
+      const statusIndisponivel = ['Aberta', 'Concluída'].includes(os.status);
       if (!statusIndisponivel) return false;
 
       // Criar data/hora de abertura
@@ -25,16 +27,21 @@ export function calcularDisponibilidade(
       const dataAbertura = new Date(`${anoAbertura}-${mesAbertura}-${diaAbertura}T${horaAbertura}:${minutoAbertura}:00`);
 
       // Se a OS ainda está aberta, verificar se a hora de análise está após a abertura
-      if (!os.dataFechamento) {
+      if (os.status === 'Aberta' && !os.dataFechamento) {
         return dataHoraAnalise >= dataAbertura;
       }
 
-      // Se a OS foi fechada, verificar se a hora de análise está no período de indisponibilidade
-      const [diaFechamento, mesFechamento, anoFechamento] = os.dataFechamento.split('-');
-      const [horaFechamento, minutoFechamento] = os.horaFechamento ? os.horaFechamento.split(':') : ['23', '59'];
-      const dataFechamento = new Date(`${anoFechamento}-${mesFechamento}-${diaFechamento}T${horaFechamento}:${minutoFechamento}:00`);
+      // Se a OS foi concluída, verificar se a hora de análise está no período de indisponibilidade
+      if (os.status === 'Concluída' && os.dataFechamento && os.horaFechamento) {
+        const [diaFechamento, mesFechamento, anoFechamento] = os.dataFechamento.split('-');
+        const [horaFechamento, minutoFechamento] = os.horaFechamento.split(':');
+        const dataFechamento = new Date(`${anoFechamento}-${mesFechamento}-${diaFechamento}T${horaFechamento}:${minutoFechamento}:00`);
 
-      return dataHoraAnalise >= dataAbertura && dataHoraAnalise <= dataFechamento;
+        return dataHoraAnalise >= dataAbertura && dataHoraAnalise <= dataFechamento;
+      }
+
+      // Se chegou aqui, a OS não causa indisponibilidade nesta hora
+      return false;
     }).length;
 
     const totalDisponiveis = Math.max(0, totalFrota - veiculosIndisponiveis);
