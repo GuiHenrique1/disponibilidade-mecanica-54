@@ -41,6 +41,10 @@ export const OSForm: React.FC<OSFormProps> = ({
   console.log('Composição ID:', formData.composicaoId);
   console.log('Editando OS:', !!editingOS);
 
+  const handleCavaloStandByChange = (cavaloId: string) => {
+    setFormData({...formData, cavaloStandById: cavaloId});
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -92,6 +96,24 @@ export const OSForm: React.FC<OSFormProps> = ({
         </div>
       )}
 
+      {showStandByCheckbox && (
+        <div className="md:col-span-2">
+          <Label htmlFor="cavaloStandBy">Cavalo Mecânico para Stand-by</Label>
+          <Select value={formData.cavaloStandById} onValueChange={handleCavaloStandByChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o cavalo para Stand-by..." />
+            </SelectTrigger>
+            <SelectContent>
+              {cavalos.map(cavalo => (
+                <SelectItem key={cavalo.id} value={cavalo.id}>
+                  {cavalo.nomeFreota} - {cavalo.placa}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="md:col-span-2">
         <Label htmlFor="placaReferente">Placa(s) Referente(s)</Label>
         <Input
@@ -114,7 +136,7 @@ export const OSForm: React.FC<OSFormProps> = ({
             }}
           />
           <Label htmlFor="criarStandBy" className="text-sm font-medium">
-            Abrir OS Stand-by para Veículo
+            Abrir OS Stand-by para Veículo Selecionado
           </Label>
         </div>
       )}

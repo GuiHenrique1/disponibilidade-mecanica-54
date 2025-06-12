@@ -12,6 +12,7 @@ export interface OSFormData {
   descricaoServico: string;
   status: OrdemServico['status'] | '';
   criarStandBy: boolean;
+  cavaloStandById: string;
 }
 
 export const initialFormData: OSFormData = {
@@ -24,5 +25,6 @@ export const initialFormData: OSFormData = {
   tipoManutencao: '',
   descricaoServico: '',
   status: '',
-  criarStandBy: false
+  criarStandBy: false,
+  cavaloStandById: ''
 };

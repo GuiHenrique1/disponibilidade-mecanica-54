@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +30,8 @@ export const useOSForm = (
       veiculoId: '',
       composicaoId: '',
       placaReferente: '',
-      criarStandBy: false
+      criarStandBy: false,
+      cavaloStandById: ''
     });
     setValidationError('');
   };
@@ -73,7 +73,8 @@ export const useOSForm = (
       tipoManutencao: os.tipoManutencao,
       descricaoServico: os.descricaoServico,
       status: 'Concluída',
-      criarStandBy: false
+      criarStandBy: false,
+      cavaloStandById: ''
     });
     setValidationError('');
     setIsDialogOpen(true);
@@ -96,7 +97,8 @@ export const useOSForm = (
       tipoManutencao: os.tipoManutencao,
       descricaoServico: os.descricaoServico,
       status: os.status,
-      criarStandBy: false
+      criarStandBy: false,
+      cavaloStandById: ''
     });
     setValidationError('');
     setIsDialogOpen(true);
@@ -110,6 +112,16 @@ export const useOSForm = (
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar se o cavalo foi selecionado quando Stand-by está marcado
+    if (formData.criarStandBy && !formData.cavaloStandById) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione o cavalo mecânico para a OS Stand-by.",
         variant: "destructive"
       });
       return;
@@ -155,70 +167,58 @@ export const useOSForm = (
         const novaOS = dataService.addOrdemServico(osData);
         console.log('OS criada:', novaOS);
         console.log('Criar Stand-by:', formData.criarStandBy);
-        console.log('Tipo de veículo:', formData.tipoVeiculo);
-        console.log('Composição ID:', formData.composicaoId);
+        console.log('Cavalo Stand-by ID:', formData.cavaloStandById);
         
         // Verificar se deve criar OS Stand-by
-        if (formData.criarStandBy && formData.tipoVeiculo === 'composicao' && formData.composicaoId) {
+        if (formData.criarStandBy && formData.cavaloStandById) {
           console.log('Iniciando criação de OS Stand-by...');
           
-          const composicao = composicoes.find(c => c.id === formData.composicaoId);
-          console.log('Composição encontrada:', composicao);
+          const cavaloStandBy = cavalos.find(c => c.id === formData.cavaloStandById);
+          console.log('Cavalo para Stand-by encontrado:', cavaloStandBy);
           
-          if (composicao && composicao.primeiraComposicao) {
-            // Buscar o cavalo mecânico pela placa da primeira composição
-            const cavaloStandBy = cavalos.find(c => c.placa === composicao.primeiraComposicao);
-            console.log('Cavalo para Stand-by encontrado:', cavaloStandBy);
+          if (cavaloStandBy) {
+            // Verificar se o cavalo já tem uma OS aberta antes de criar a stand-by
+            const ordensAtual = dataService.getOrdensServico(); // Buscar dados atualizados
+            const standByError = validateUniqueOS(ordensAtual, cavaloStandBy.id, 'frota', cavalos, composicoes);
+            console.log('Erro de validação Stand-by:', standByError);
             
-            if (cavaloStandBy) {
-              // Verificar se o cavalo já tem uma OS aberta antes de criar a stand-by
-              const ordensAtual = dataService.getOrdensServico(); // Buscar dados atualizados
-              const standByError = validateUniqueOS(ordensAtual, cavaloStandBy.id, 'frota', cavalos, composicoes);
-              console.log('Erro de validação Stand-by:', standByError);
+            if (!standByError) {
+              const composicao = composicoes.find(c => c.id === formData.composicaoId);
+              const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
+                tipoVeiculo: 'frota',
+                veiculoId: cavaloStandBy.id,
+                placaReferente: cavaloStandBy.placa,
+                dataAbertura,
+                horaAbertura,
+                dataFechamento: dataFechamento || undefined,
+                horaFechamento: horaFechamento || undefined,
+                tipoManutencao: formData.tipoManutencao,
+                descricaoServico: `STAND-BY ${composicao?.identificador || ''} - ${formData.descricaoServico}`,
+                status: formData.status,
+                isStandBy: true,
+                composicaoOrigemId: formData.composicaoId
+              };
               
-              if (!standByError) {
-                const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
-                  tipoVeiculo: 'frota',
-                  veiculoId: cavaloStandBy.id,
-                  placaReferente: cavaloStandBy.placa,
-                  dataAbertura,
-                  horaAbertura,
-                  dataFechamento: dataFechamento || undefined,
-                  horaFechamento: horaFechamento || undefined,
-                  tipoManutencao: formData.tipoManutencao,
-                  descricaoServico: `STAND-BY ${composicao.identificador} - ${formData.descricaoServico}`,
-                  status: formData.status,
-                  isStandBy: true,
-                  composicaoOrigemId: formData.composicaoId
-                };
-                
-                console.log('Criando OS Stand-by com dados:', osStandBy);
-                const osStandByCriada = dataService.addOrdemServico(osStandBy);
-                console.log('OS Stand-by criada:', osStandByCriada);
-                
-                toast({
-                  title: "Sucesso",
-                  description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
-                });
-              } else {
-                console.log('Não foi possível criar Stand-by:', standByError);
-                toast({
-                  title: "Aviso",
-                  description: `OS da composição criada, mas não foi possível criar a OS Stand-by: ${standByError}`
-                });
-              }
+              console.log('Criando OS Stand-by com dados:', osStandBy);
+              const osStandByCriada = dataService.addOrdemServico(osStandBy);
+              console.log('OS Stand-by criada:', osStandByCriada);
+              
+              toast({
+                title: "Sucesso",
+                description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
+              });
             } else {
-              console.log('Cavalo mecânico não encontrado para a placa:', composicao.primeiraComposicao);
+              console.log('Não foi possível criar Stand-by:', standByError);
               toast({
                 title: "Aviso",
-                description: "OS da composição criada, mas não foi possível encontrar o cavalo mecânico para criar a OS Stand-by."
+                description: `OS da composição criada, mas não foi possível criar a OS Stand-by: ${standByError}`
               });
             }
           } else {
-            console.log('Composição não encontrada ou sem primeira composição');
+            console.log('Cavalo mecânico não encontrado para ID:', formData.cavaloStandById);
             toast({
-              title: "Aviso", 
-              description: "OS da composição criada, mas não foi possível criar a OS Stand-by: dados da composição incompletos."
+              title: "Aviso",
+              description: "OS da composição criada, mas não foi possível encontrar o cavalo mecânico para criar a OS Stand-by."
             });
           }
         } else {
