@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, CheckCircle } from 'lucide-react';
 import { getStatusColor } from './OSFormUtils';
 
 interface OSListProps {
@@ -12,6 +12,7 @@ interface OSListProps {
   composicoes: Composicao[];
   onEdit: (os: OrdemServico) => void;
   onDelete: (id: string) => void;
+  onFinalize: (os: OrdemServico) => void;
 }
 
 export const OSList: React.FC<OSListProps> = ({
@@ -19,7 +20,8 @@ export const OSList: React.FC<OSListProps> = ({
   cavalos,
   composicoes,
   onEdit,
-  onDelete
+  onDelete,
+  onFinalize
 }) => {
   const getVeiculoLabel = (veiculoId: string, tipoVeiculo: 'frota' | 'composicao') => {
     if (tipoVeiculo === 'frota') {
@@ -94,6 +96,17 @@ export const OSList: React.FC<OSListProps> = ({
                   </div>
 
                   <div className="flex space-x-2 ml-4">
+                    {os.status === 'Aberta' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onFinalize(os)}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        title="Finalizar OS"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

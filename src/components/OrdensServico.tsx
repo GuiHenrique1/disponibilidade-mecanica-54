@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -52,6 +51,28 @@ export const OrdensServico: React.FC = () => {
       composicaoId,
       placaReferente: composicao ? `${composicao.primeiraComposicao} ${composicao.segundaComposicao}` : ''
     });
+  };
+
+  const handleFinalize = (os: OrdemServico) => {
+    const now = new Date();
+    const dataHoraAtual = now.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+    
+    setEditingOS(os);
+    const dataHoraAbertura = formatDateTimeForInput(os.dataAbertura, os.horaAbertura);
+
+    setFormData({
+      tipoVeiculo: os.tipoVeiculo,
+      veiculoId: os.tipoVeiculo === 'frota' ? os.veiculoId : '',
+      composicaoId: os.tipoVeiculo === 'composicao' ? os.veiculoId : '',
+      placaReferente: os.placaReferente,
+      dataHoraAbertura,
+      dataHoraFechamento: dataHoraAtual,
+      tipoManutencao: os.tipoManutencao,
+      descricaoServico: os.descricaoServico,
+      status: 'Concluída',
+      criarStandBy: false
+    });
+    setIsDialogOpen(true);
   };
 
   const handleSubmit = () => {
@@ -225,6 +246,7 @@ export const OrdensServico: React.FC = () => {
         composicoes={composicoes}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onFinalize={handleFinalize}
       />
     </div>
   );
