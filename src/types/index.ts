@@ -1,6 +1,7 @@
 
 export interface CavaloMecanico {
   id: string;
+  nomeFreota: string; // Nome da frota (ex: T2506)
   placa: string;
   createdAt: Date;
 }
@@ -20,8 +21,9 @@ export interface Motorista {
 
 export interface OrdemServico {
   id: string;
+  tipoVeiculo: 'frota' | 'composicao';
   veiculoId: string; // ID do cavalo ou composição
-  tipoVeiculo: 'cavalo' | 'composicao';
+  placaReferente: string; // Placa(s) do veículo/composição
   dataAbertura: string; // DD-MM-AAAA
   horaAbertura: string; // HH:MM
   dataFechamento?: string;
@@ -29,6 +31,8 @@ export interface OrdemServico {
   tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'Outros';
   descricaoServico: string;
   status: 'Aberta' | 'Em Andamento' | 'Aguardando Peça' | 'Concluída' | 'Cancelada';
+  isStandBy?: boolean; // Indica se é uma OS stand-by
+  composicaoOrigemId?: string; // ID da composição que originou esta OS stand-by
   createdAt: Date;
 }
 
@@ -49,7 +53,7 @@ export interface DadosDisponibilidade {
 // Interfaces para relatórios e estatísticas
 export interface RelatorioDisponibilidade {
   dataAnalise: string;
-  tipoVeiculo: 'cavalo' | 'composicao';
+  tipoVeiculo: 'frota' | 'composicao';
   dadosDisponibilidade: DadosDisponibilidade;
   metaDefinida: number;
   metaAtingida: boolean;
@@ -61,6 +65,6 @@ export interface EstatisticasOS {
   osEmAndamento: number;
   osAguardandoPeca: number;
   osConcluidas: number;
-  osCanceladas: string;
+  osCanceladas: number;
   tempoMedioResolucao: number; // em horas
 }

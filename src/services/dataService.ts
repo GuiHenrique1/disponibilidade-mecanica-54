@@ -46,6 +46,35 @@ class DataService {
     return true;
   }
 
+  // Método para importação em massa de cavalos
+  importCavalosEmMassa(textData: string): { success: number; errors: string[] } {
+    const lines = textData.split('\n').filter(line => line.trim());
+    const cavalos = this.getCavalos();
+    let success = 0;
+    const errors: string[] = [];
+
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        const nomeFreota = parts[0];
+        const placa = parts[1];
+        
+        // Verificar se já existe
+        const exists = cavalos.some(c => c.nomeFreota === nomeFreota || c.placa === placa);
+        if (!exists) {
+          this.addCavalo({ nomeFreota, placa });
+          success++;
+        } else {
+          errors.push(`Cavalo ${nomeFreota} ${placa} já existe`);
+        }
+      } else {
+        errors.push(`Linha inválida: ${line}`);
+      }
+    }
+
+    return { success, errors };
+  }
+
   // Composições
   getComposicoes(): Composicao[] {
     const data = localStorage.getItem('composicoes');
@@ -88,6 +117,35 @@ class DataService {
     
     this.saveComposicoes(filtered);
     return true;
+  }
+
+  // Método para importação em massa de composições
+  importComposicoesEmMassa(textData: string): { success: number; errors: string[] } {
+    const lines = textData.split('\n').filter(line => line.trim());
+    const composicoes = this.getComposicoes();
+    let success = 0;
+    const errors: string[] = [];
+
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        const identificador = parts[0];
+        const placas = parts.slice(1);
+        
+        // Verificar se já existe
+        const exists = composicoes.some(c => c.identificador === identificador);
+        if (!exists) {
+          this.addComposicao({ identificador, placas });
+          success++;
+        } else {
+          errors.push(`Composição ${identificador} já existe`);
+        }
+      } else {
+        errors.push(`Linha inválida: ${line}`);
+      }
+    }
+
+    return { success, errors };
   }
 
   // Motoristas
@@ -134,6 +192,30 @@ class DataService {
     return true;
   }
 
+  // Método para importação em massa de motoristas
+  importMotoristasEmMassa(textData: string): { success: number; errors: string[] } {
+    const lines = textData.split('\n').filter(line => line.trim());
+    const motoristas = this.getMotoristas();
+    let success = 0;
+    const errors: string[] = [];
+
+    for (const line of lines) {
+      const nome = line.trim();
+      if (nome) {
+        // Verificar se já existe
+        const exists = motoristas.some(m => m.nome.toLowerCase() === nome.toLowerCase());
+        if (!exists) {
+          this.addMotorista({ nome });
+          success++;
+        } else {
+          errors.push(`Motorista ${nome} já existe`);
+        }
+      }
+    }
+
+    return { success, errors };
+  }
+
   // Ordens de Serviço
   getOrdensServico(): OrdemServico[] {
     const data = localStorage.getItem('ordens-servico');
@@ -155,6 +237,33 @@ class DataService {
     const updatedOS = [...ordensServico, novaOS];
     this.saveOrdensServico(updatedOS);
     return novaOS;
+  }
+
+  // Método para criar OS Stand-by automaticamente
+  criarOSStandBy(composicaoId: string, osOriginal: Omit<OrdemServico, 'id' | 'createdAt'>): OrdemServico | null {
+    const cavalos = this.getCavalos();
+    const composicoes = this.getComposicoes();
+    
+    const composicao = composicoes.find(c => c.id === composicaoId);
+    if (!composicao || !composicao.placas.length) return null;
+
+    // Buscar o primeiro cavalo que tenha uma das placas da composição
+    const primeiraPlaca = composicao.placas[0];
+    const cavaloStandBy = cavalos.find(c => c.placa === primeiraPlaca);
+    
+    if (!cavaloStandBy) return null;
+
+    const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
+      ...osOriginal,
+      tipoVeiculo: 'frota',
+      veiculoId: cavaloStandBy.id,
+      placaReferente: cavaloStandBy.placa,
+      descricaoServico: `STAND-BY ${composicao.identificador} - ${osOriginal.descricaoServico}`,
+      isStandBy: true,
+      composicaoOrigemId: composicaoId
+    };
+
+    return this.addOrdemServico(osStandBy);
   }
 
   updateOrdemServico(id: string, updates: Partial<OrdemServico>): boolean {
@@ -179,7 +288,7 @@ class DataService {
   }
 
   // Métodos de busca e relatórios
-  getOSByVeiculo(veiculoId: string, tipoVeiculo: 'cavalo' | 'composicao'): OrdemServico[] {
+  getOSByVeiculo(veiculoId: string, tipoVeiculo: 'frota' | 'composicao'): OrdemServico[] {
     const ordensServico = this.getOrdensServico();
     return ordensServico.filter(os => os.veiculoId === veiculoId && os.tipoVeiculo === tipoVeiculo);
   }

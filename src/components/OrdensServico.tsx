@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { dataService } from '@/services/dataService';
 
 export const OrdensServico: React.FC = () => {
   const [ordensServico, setOrdensServico] = useLocalStorage<OrdemServico[]>('ordens-servico', []);
@@ -21,28 +23,32 @@ export const OrdensServico: React.FC = () => {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
+    tipoVeiculo: '' as 'frota' | 'composicao' | '',
     veiculoId: '',
-    tipoVeiculo: '' as 'cavalo' | 'composicao' | '',
+    placaReferente: '',
     dataAbertura: '',
     horaAbertura: '',
     dataFechamento: '',
     horaFechamento: '',
     tipoManutencao: '' as OrdemServico['tipoManutencao'] | '',
     descricaoServico: '',
-    status: '' as OrdemServico['status'] | ''
+    status: '' as OrdemServico['status'] | '',
+    criarStandBy: false
   });
 
   const resetForm = () => {
     setFormData({
-      veiculoId: '',
       tipoVeiculo: '',
+      veiculoId: '',
+      placaReferente: '',
       dataAbertura: '',
       horaAbertura: '',
       dataFechamento: '',
       horaFechamento: '',
       tipoManutencao: '',
       descricaoServico: '',
-      status: ''
+      status: '',
+      criarStandBy: false
     });
   };
 
@@ -59,51 +65,65 @@ export const OrdensServico: React.FC = () => {
   };
 
   const getVeiculoOptions = () => {
-    const options = [];
-    
-    cavalos.forEach(cavalo => {
-      options.push({
+    if (formData.tipoVeiculo === 'frota') {
+      return cavalos.map(cavalo => ({
         value: cavalo.id,
-        label: `${cavalo.placa} (Cavalo)`,
-        tipo: 'cavalo' as const
-      });
-    });
-
-    composicoes.forEach(composicao => {
-      options.push({
+        label: cavalo.nomeFreota,
+        placa: cavalo.placa
+      }));
+    } else if (formData.tipoVeiculo === 'composicao') {
+      return composicoes.map(composicao => ({
         value: composicao.id,
-        label: `${composicao.identificador} (Composição)`,
-        tipo: 'composicao' as const
-      });
-    });
-
-    return options;
+        label: composicao.identificador,
+        placas: composicao.placas
+      }));
+    }
+    return [];
   };
 
-  const getVeiculoLabel = (veiculoId: string, tipoVeiculo: 'cavalo' | 'composicao') => {
-    if (tipoVeiculo === 'cavalo') {
+  const getVeiculoLabel = (veiculoId: string, tipoVeiculo: 'frota' | 'composicao') => {
+    if (tipoVeiculo === 'frota') {
       const cavalo = cavalos.find(c => c.id === veiculoId);
-      return cavalo ? cavalo.placa : 'Cavalo não encontrado';
+      return cavalo ? cavalo.nomeFreota : 'Frota não encontrada';
     } else {
       const composicao = composicoes.find(c => c.id === veiculoId);
       return composicao ? composicao.identificador : 'Composição não encontrada';
     }
   };
 
-  const handleVeiculoChange = (value: string) => {
-    const option = getVeiculoOptions().find(opt => opt.value === value);
-    if (option) {
-      setFormData({
-        ...formData,
-        veiculoId: value,
-        tipoVeiculo: option.tipo
-      });
+  const handleTipoVeiculoChange = (tipo: 'frota' | 'composicao') => {
+    setFormData({
+      ...formData,
+      tipoVeiculo: tipo,
+      veiculoId: '',
+      placaReferente: '',
+      criarStandBy: false
+    });
+  };
+
+  const handleVeiculoChange = (veiculoId: string) => {
+    const options = getVeiculoOptions();
+    const selectedOption = options.find(opt => opt.value === veiculoId);
+    
+    let placaReferente = '';
+    if (selectedOption) {
+      if (formData.tipoVeiculo === 'frota') {
+        placaReferente = (selectedOption as any).placa;
+      } else {
+        placaReferente = (selectedOption as any).placas.join(', ');
+      }
     }
+
+    setFormData({
+      ...formData,
+      veiculoId,
+      placaReferente
+    });
   };
 
   const handleSubmit = () => {
     // Validações
-    if (!formData.veiculoId || !formData.tipoVeiculo || !formData.dataAbertura || 
+    if (!formData.tipoVeiculo || !formData.veiculoId || !formData.dataAbertura || 
         !formData.horaAbertura || !formData.tipoManutencao || !formData.status) {
       toast({
         title: "Erro",
@@ -113,57 +133,87 @@ export const OrdensServico: React.FC = () => {
       return;
     }
 
-    const osData: OrdemServico = {
-      id: editingOS?.id || crypto.randomUUID(),
-      veiculoId: formData.veiculoId,
+    const osData: Omit<OrdemServico, 'id' | 'createdAt'> = {
       tipoVeiculo: formData.tipoVeiculo,
+      veiculoId: formData.veiculoId,
+      placaReferente: formData.placaReferente,
       dataAbertura: formatDateForStorage(formData.dataAbertura),
       horaAbertura: formData.horaAbertura,
       dataFechamento: formData.dataFechamento ? formatDateForStorage(formData.dataFechamento) : undefined,
       horaFechamento: formData.horaFechamento || undefined,
       tipoManutencao: formData.tipoManutencao,
       descricaoServico: formData.descricaoServico,
-      status: formData.status,
-      createdAt: editingOS?.createdAt || new Date()
+      status: formData.status
     };
 
-    if (editingOS) {
-      setOrdensServico(ordensServico.map(os => os.id === editingOS.id ? osData : os));
+    try {
+      if (editingOS) {
+        dataService.updateOrdemServico(editingOS.id, osData);
+        setOrdensServico(dataService.getOrdensServico());
+        toast({
+          title: "Sucesso",
+          description: "Ordem de serviço atualizada com sucesso."
+        });
+      } else {
+        const novaOS = dataService.addOrdemServico(osData);
+        
+        // Criar OS Stand-by se solicitado
+        if (formData.criarStandBy && formData.tipoVeiculo === 'composicao') {
+          const osStandBy = dataService.criarOSStandBy(formData.veiculoId, osData);
+          if (osStandBy) {
+            toast({
+              title: "Sucesso",
+              description: "Ordem de serviço e OS Stand-by criadas com sucesso."
+            });
+          } else {
+            toast({
+              title: "Aviso",
+              description: "Ordem de serviço criada, mas não foi possível criar a OS Stand-by."
+            });
+          }
+        } else {
+          toast({
+            title: "Sucesso",
+            description: "Ordem de serviço criada com sucesso."
+          });
+        }
+        
+        setOrdensServico(dataService.getOrdensServico());
+      }
+
+      resetForm();
+      setEditingOS(null);
+      setIsDialogOpen(false);
+    } catch (error) {
       toast({
-        title: "Sucesso",
-        description: "Ordem de serviço atualizada com sucesso."
-      });
-    } else {
-      setOrdensServico([...ordensServico, osData]);
-      toast({
-        title: "Sucesso",
-        description: "Ordem de serviço criada com sucesso."
+        title: "Erro",
+        description: "Erro ao salvar ordem de serviço.",
+        variant: "destructive"
       });
     }
-
-    resetForm();
-    setEditingOS(null);
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (os: OrdemServico) => {
     setEditingOS(os);
     setFormData({
-      veiculoId: os.veiculoId,
       tipoVeiculo: os.tipoVeiculo,
+      veiculoId: os.veiculoId,
+      placaReferente: os.placaReferente,
       dataAbertura: formatDateForInput(os.dataAbertura),
       horaAbertura: os.horaAbertura,
       dataFechamento: os.dataFechamento ? formatDateForInput(os.dataFechamento) : '',
       horaFechamento: os.horaFechamento || '',
       tipoManutencao: os.tipoManutencao,
       descricaoServico: os.descricaoServico,
-      status: os.status
+      status: os.status,
+      criarStandBy: false
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    setOrdensServico(ordensServico.filter(os => os.id !== id));
+    dataService.deleteOrdemServico(id);
+    setOrdensServico(dataService.getOrdensServico());
     toast({
       title: "Sucesso",
       description: "Ordem de serviço removida com sucesso."
@@ -203,14 +253,33 @@ export const OrdensServico: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label htmlFor="veiculo">Veículo/Composição *</Label>
+              <div>
+                <Label htmlFor="tipoVeiculo">Tipo de Veículo *</Label>
+                <Select 
+                  value={formData.tipoVeiculo} 
+                  onValueChange={handleTipoVeiculoChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="frota">Frota</SelectItem>
+                    <SelectItem value="composicao">Composição</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="veiculo">
+                  {formData.tipoVeiculo === 'frota' ? 'Nome da Frota' : 'Composição'} *
+                </Label>
                 <Select 
                   value={formData.veiculoId} 
                   onValueChange={handleVeiculoChange}
+                  disabled={!formData.tipoVeiculo}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um veículo..." />
+                    <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
                     {getVeiculoOptions().map(option => (
@@ -220,6 +289,17 @@ export const OrdensServico: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="placaReferente">Placa(s) Referente(s)</Label>
+                <Input
+                  id="placaReferente"
+                  value={formData.placaReferente}
+                  readOnly
+                  className="bg-gray-100"
+                  placeholder="Será preenchido automaticamente"
+                />
               </div>
 
               <div>
@@ -304,6 +384,21 @@ export const OrdensServico: React.FC = () => {
                 </Select>
               </div>
 
+              {formData.tipoVeiculo === 'composicao' && !editingOS && (
+                <div className="md:col-span-2 flex items-center space-x-2">
+                  <Checkbox
+                    id="criarStandBy"
+                    checked={formData.criarStandBy}
+                    onCheckedChange={(checked) => 
+                      setFormData({...formData, criarStandBy: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="criarStandBy">
+                    Abrir OS Stand-by para Veículo
+                  </Label>
+                </div>
+              )}
+
               <div className="md:col-span-2">
                 <Label htmlFor="descricao">Descrição do Serviço</Label>
                 <Textarea
@@ -346,6 +441,11 @@ export const OrdensServico: React.FC = () => {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(os.status)}`}>
                           {os.status}
                         </span>
+                        {os.isStandBy && (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                            STAND-BY
+                          </span>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
@@ -356,13 +456,18 @@ export const OrdensServico: React.FC = () => {
                           </span>
                         </div>
                         <div>
+                          <span className="text-muted-foreground">Placa(s): </span>
+                          <span>{os.placaReferente}</span>
+                        </div>
+                        <div>
                           <span className="text-muted-foreground">Abertura: </span>
                           <span>{os.dataAbertura} {os.horaAbertura}</span>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Tipo: </span>
-                          <span>{os.tipoManutencao}</span>
-                        </div>
+                      </div>
+
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Tipo: </span>
+                        <span>{os.tipoManutencao}</span>
                       </div>
 
                       {os.dataFechamento && (

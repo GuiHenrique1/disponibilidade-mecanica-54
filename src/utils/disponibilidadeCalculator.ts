@@ -5,7 +5,7 @@ export function calcularDisponibilidade(
   totalFrota: number,
   ordensServico: OrdemServico[],
   dataAnalise: string,
-  tipoVeiculo: 'cavalo' | 'composicao'
+  tipoVeiculo: 'frota' | 'composicao'
 ): DadosDisponibilidade {
   const disponibilidadePorHora = [];
 

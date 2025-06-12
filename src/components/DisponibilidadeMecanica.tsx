@@ -29,13 +29,13 @@ export const DisponibilidadeMecanica: React.FC = () => {
     return `${day}-${month}-${year}`;
   }, [dataAnalise]);
 
-  // Calcular disponibilidade dos cavalos
+  // Calcular disponibilidade dos cavalos (frota)
   const dadosCavalos = useMemo(() => {
     return calcularDisponibilidade(
       cavalos.length,
       ordensServico,
       dataAnaliseFormatada,
-      'cavalo'
+      'frota'
     );
   }, [cavalos.length, ordensServico, dataAnaliseFormatada]);
 
