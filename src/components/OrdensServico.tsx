@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -55,14 +54,11 @@ export const OrdensServico: React.FC = () => {
   };
 
   const handleFinalize = (os: OrdemServico) => {
-    const now = new Date();
-    // Corrigir o formato para usar o horário local correto
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const dataHoraAtual = `${year}-${month}-${day}T${hours}:${minutes}`;
+    // Criar um input datetime-local diretamente com o horário atual
+    const agora = new Date();
+    const offset = agora.getTimezoneOffset() * 60000; // offset em millisegundos
+    const localTime = new Date(agora.getTime() - offset);
+    const dataHoraAtual = localTime.toISOString().slice(0, 16);
     
     setEditingOS(os);
     const dataHoraAbertura = formatDateTimeForInput(os.dataAbertura, os.horaAbertura);
