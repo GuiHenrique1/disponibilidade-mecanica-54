@@ -18,10 +18,12 @@ export const OrdensServico: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOS, setEditingOS] = useState<OrdemServico | null>(null);
   const [formData, setFormData] = useState<OSFormData>(initialFormData);
+  const [validationError, setValidationError] = useState<string>('');
   const { toast } = useToast();
 
   const resetForm = () => {
     setFormData(initialFormData);
+    setValidationError('');
   };
 
   const handleTipoVeiculoChange = (tipo: 'frota' | 'composicao') => {
@@ -33,6 +35,7 @@ export const OrdensServico: React.FC = () => {
       placaReferente: '',
       criarStandBy: false
     });
+    setValidationError('');
   };
 
   const handleVeiculoChange = (veiculoId: string) => {
@@ -42,6 +45,7 @@ export const OrdensServico: React.FC = () => {
       veiculoId,
       placaReferente: cavalo ? cavalo.placa : ''
     });
+    setValidationError('');
   };
 
   const handleComposicaoChange = (composicaoId: string) => {
@@ -51,6 +55,23 @@ export const OrdensServico: React.FC = () => {
       composicaoId,
       placaReferente: composicao ? `${composicao.primeiraComposicao} ${composicao.segundaComposicao}` : ''
     });
+    setValidationError('');
+  };
+
+  const checkForOpenOS = (veiculoId: string, tipoVeiculo: 'frota' | 'composicao'): string | null => {
+    const osAbertas = ordensServico.filter(os => os.status === 'Aberta' && os.veiculoId === veiculoId && os.tipoVeiculo === tipoVeiculo);
+    
+    if (osAbertas.length > 0) {
+      if (tipoVeiculo === 'frota') {
+        const cavalo = cavalos.find(c => c.id === veiculoId);
+        return `Já existe uma OS aberta para o veículo ${cavalo?.nomeFreota || 'não identificado'}`;
+      } else {
+        const composicao = composicoes.find(c => c.id === veiculoId);
+        return `Já existe uma OS aberta para a composição ${composicao?.identificador || 'não identificada'}`;
+      }
+    }
+    
+    return null;
   };
 
   const handleFinalize = (os: OrdemServico) => {
@@ -75,6 +96,7 @@ export const OrdensServico: React.FC = () => {
       status: 'Concluída',
       criarStandBy: false
     });
+    setValidationError('');
     setIsDialogOpen(true);
   };
 
@@ -89,6 +111,15 @@ export const OrdensServico: React.FC = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Verificar se já existe uma OS aberta para este veículo (apenas para novas OS)
+    if (!editingOS && formData.status === 'Aberta') {
+      const errorMessage = checkForOpenOS(selectedVehicleId, formData.tipoVeiculo);
+      if (errorMessage) {
+        setValidationError(errorMessage);
+        return;
+      }
     }
 
     const { date: dataAbertura, time: horaAbertura } = formatDateTimeForStorage(formData.dataHoraAbertura);
@@ -127,26 +158,35 @@ export const OrdensServico: React.FC = () => {
             const cavaloStandBy = cavalos.find(c => c.placa === composicao.primeiraComposicao);
             
             if (cavaloStandBy) {
-              const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
-                tipoVeiculo: 'frota',
-                veiculoId: cavaloStandBy.id,
-                placaReferente: cavaloStandBy.placa,
-                dataAbertura,
-                horaAbertura,
-                dataFechamento: dataFechamento || undefined,
-                horaFechamento: horaFechamento || undefined,
-                tipoManutencao: formData.tipoManutencao,
-                descricaoServico: `STAND-BY ${composicao.identificador} - ${formData.descricaoServico}`,
-                status: formData.status,
-                isStandBy: true,
-                composicaoOrigemId: formData.composicaoId
-              };
-              
-              dataService.addOrdemServico(osStandBy);
-              toast({
-                title: "Sucesso",
-                description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
-              });
+              // Verificar se o cavalo já tem uma OS aberta antes de criar a stand-by
+              const standByError = checkForOpenOS(cavaloStandBy.id, 'frota');
+              if (!standByError) {
+                const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
+                  tipoVeiculo: 'frota',
+                  veiculoId: cavaloStandBy.id,
+                  placaReferente: cavaloStandBy.placa,
+                  dataAbertura,
+                  horaAbertura,
+                  dataFechamento: dataFechamento || undefined,
+                  horaFechamento: horaFechamento || undefined,
+                  tipoManutencao: formData.tipoManutencao,
+                  descricaoServico: `STAND-BY ${composicao.identificador} - ${formData.descricaoServico}`,
+                  status: formData.status,
+                  isStandBy: true,
+                  composicaoOrigemId: formData.composicaoId
+                };
+                
+                dataService.addOrdemServico(osStandBy);
+                toast({
+                  title: "Sucesso",
+                  description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
+                });
+              } else {
+                toast({
+                  title: "Aviso",
+                  description: `OS da composição criada, mas não foi possível criar a OS Stand-by: ${standByError}`
+                });
+              }
             } else {
               toast({
                 title: "Aviso",
@@ -195,6 +235,7 @@ export const OrdensServico: React.FC = () => {
       status: os.status,
       criarStandBy: false
     });
+    setValidationError('');
     setIsDialogOpen(true);
   };
 
@@ -228,6 +269,13 @@ export const OrdensServico: React.FC = () => {
                 {editingOS ? 'Editar Ordem de Serviço' : 'Nova Ordem de Serviço'}
               </DialogTitle>
             </DialogHeader>
+            
+            {validationError && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                {validationError}
+              </div>
+            )}
+            
             <OSForm
               formData={formData}
               setFormData={setFormData}

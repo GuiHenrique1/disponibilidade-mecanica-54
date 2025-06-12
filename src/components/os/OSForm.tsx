@@ -148,6 +148,7 @@ export const OSForm: React.FC<OSFormProps> = ({
             <SelectItem value="SOS">SOS</SelectItem>
             <SelectItem value="TERMAC">TERMAC</SelectItem>
             <SelectItem value="ITR">ITR</SelectItem>
+            <SelectItem value="STAND-BY">STAND-BY</SelectItem>
             <SelectItem value="Outros">OUTROS</SelectItem>
           </SelectContent>
         </Select>

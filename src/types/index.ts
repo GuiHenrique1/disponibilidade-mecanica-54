@@ -30,7 +30,7 @@ export interface OrdemServico {
   horaAbertura: string; // HH:MM
   dataFechamento?: string;
   horaFechamento?: string;
-  tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'SOS' | 'TERMAC' | 'ITR' | 'Outros';
+  tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'SOS' | 'TERMAC' | 'ITR' | 'STAND-BY' | 'Outros';
   descricaoServico: string;
   status: 'Aberta' | 'Concluída' | 'Cancelada';
   isStandBy?: boolean; // Indica se é uma OS stand-by
