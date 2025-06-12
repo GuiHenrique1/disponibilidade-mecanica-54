@@ -105,13 +105,9 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               y={(metaDisponibilidade / 100) * dados.totalFrota} 
               stroke="#f59e0b" 
               strokeDasharray="5 5"
-              label={{ value: "Meta", position: "topRight" }}
+              label="Meta"
             />
-            <Bar 
-              dataKey="disponiveis" 
-              fill={(entry: any) => entry?.acimaMeta ? '#10b981' : '#ef4444'}
-              radius={[4, 4, 0, 0]}
-            >
+            <Bar dataKey="disponiveis" radius={[4, 4, 0, 0]}>
               {barData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.acimaMeta ? '#10b981' : '#ef4444'} />
               ))}

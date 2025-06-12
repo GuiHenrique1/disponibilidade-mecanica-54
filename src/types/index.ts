@@ -45,3 +45,22 @@ export interface DadosDisponibilidade {
   mediaDisponibilidade: number;
   mediaVeiculosDisponiveis: number;
 }
+
+// Interfaces para relatórios e estatísticas
+export interface RelatorioDisponibilidade {
+  dataAnalise: string;
+  tipoVeiculo: 'cavalo' | 'composicao';
+  dadosDisponibilidade: DadosDisponibilidade;
+  metaDefinida: number;
+  metaAtingida: boolean;
+}
+
+export interface EstatisticasOS {
+  totalOS: number;
+  osAbertas: number;
+  osEmAndamento: number;
+  osAguardandoPeca: number;
+  osConcluidas: number;
+  osCanceladas: string;
+  tempoMedioResolucao: number; // em horas
+}

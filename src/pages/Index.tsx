@@ -6,8 +6,9 @@ import { Composicoes } from '@/components/Composicoes';
 import { Motoristas } from '@/components/Motoristas';
 import { OrdensServico } from '@/components/OrdensServico';
 import { DisponibilidadeMecanica } from '@/components/DisponibilidadeMecanica';
+import { AppProvider } from '@/contexts/AppContext';
 
-const Index = () => {
+const IndexContent = () => {
   const [activeTab, setActiveTab] = useState('cavalos');
 
   const renderContent = () => {
@@ -34,6 +35,14 @@ const Index = () => {
         {renderContent()}
       </main>
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <AppProvider>
+      <IndexContent />
+    </AppProvider>
   );
 };
 

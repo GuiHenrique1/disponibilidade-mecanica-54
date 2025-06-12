@@ -37,7 +37,7 @@ export function calcularDisponibilidade(
       return dataHoraAnalise >= dataAbertura && dataHoraAnalise <= dataFechamento;
     }).length;
 
-    const totalDisponiveis = totalFrota - veiculosIndisponiveis;
+    const totalDisponiveis = Math.max(0, totalFrota - veiculosIndisponiveis);
     const percentualDisponibilidade = totalFrota > 0 ? (totalDisponiveis / totalFrota) * 100 : 100;
 
     disponibilidadePorHora.push({
@@ -56,5 +56,44 @@ export function calcularDisponibilidade(
     disponibilidadePorHora,
     mediaDisponibilidade,
     mediaVeiculosDisponiveis
+  };
+}
+
+export function calcularEstatisticasOS(ordensServico: OrdemServico[]): any {
+  const totalOS = ordensServico.length;
+  const osAbertas = ordensServico.filter(os => os.status === 'Aberta').length;
+  const osEmAndamento = ordensServico.filter(os => os.status === 'Em Andamento').length;
+  const osAguardandoPeca = ordensServico.filter(os => os.status === 'Aguardando Peça').length;
+  const osConcluidas = ordensServico.filter(os => os.status === 'Concluída').length;
+  const osCanceladas = ordensServico.filter(os => os.status === 'Cancelada').length;
+
+  // Calcular tempo médio de resolução para OS concluídas
+  const osConcluidas_dados = ordensServico.filter(os => os.status === 'Concluída' && os.dataFechamento);
+  let tempoMedioResolucao = 0;
+
+  if (osConcluidas_dados.length > 0) {
+    const tempos = osConcluidas_dados.map(os => {
+      const [diaAb, mesAb, anoAb] = os.dataAbertura.split('-');
+      const [horaAb, minAb] = os.horaAbertura.split(':');
+      const dataAbertura = new Date(`${anoAb}-${mesAb}-${diaAb}T${horaAb}:${minAb}:00`);
+
+      const [diaFe, mesFe, anoFe] = os.dataFechamento!.split('-');
+      const [horaFe, minFe] = os.horaFechamento ? os.horaFechamento.split(':') : ['23', '59'];
+      const dataFechamento = new Date(`${anoFe}-${mesFe}-${diaFe}T${horaFe}:${minFe}:00`);
+
+      return (dataFechamento.getTime() - dataAbertura.getTime()) / (1000 * 60 * 60); // em horas
+    });
+
+    tempoMedioResolucao = tempos.reduce((acc, curr) => acc + curr, 0) / tempos.length;
+  }
+
+  return {
+    totalOS,
+    osAbertas,
+    osEmAndamento,
+    osAguardandoPeca,
+    osConcluidas,
+    osCanceladas,
+    tempoMedioResolucao
   };
 }
