@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,11 +39,14 @@ export const Composicoes: React.FC = () => {
     const novasComposicoes: Composicao[] = [];
 
     linhas.forEach(linha => {
-      const partes = linha.trim().split(':');
-      if (partes.length === 2) {
+      // Dividir por tabs primeiro, depois por espaços múltiplos se não houver tabs
+      const partes = linha.includes('\t') 
+        ? linha.trim().split('\t').filter(p => p.trim())
+        : linha.trim().split(/\s+/).filter(p => p.trim());
+      
+      if (partes.length >= 2) {
         const identificador = partes[0].trim();
-        const placasStr = partes[1].trim();
-        const placas = placasStr.split(/\s+/).filter(p => p.trim());
+        const placas = partes.slice(1).map(p => p.trim()).filter(p => p);
 
         if (identificador && placas.length > 0 && !composicoes.some(c => c.identificador === identificador)) {
           novasComposicoes.push({
@@ -158,15 +160,15 @@ export const Composicoes: React.FC = () => {
           <CardHeader>
             <CardTitle>Importação em Massa - Composições</CardTitle>
             <CardDescription>
-              Cole as composições no formato: C01: QAH0J25 QAH0J27 (uma por linha)
+              Cole as composições no formato: C01	QAH0J25	QAH0J27 (separados por tabs ou espaços)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
-              placeholder="C01: QAH0J25 QAH0J27&#10;C02: ABC1234 DEF5678&#10;..."
+              placeholder="C01	QAH0J25	QAH0J27&#10;C02	QAH0J01	QAH0J17&#10;C03	QAH0953	QAH0955&#10;..."
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
-              className="min-h-[120px]"
+              className="min-h-[120px] font-mono"
             />
             <div className="flex space-x-2">
               <Button onClick={handleImportData} className="bg-primary hover:bg-primary/90">
