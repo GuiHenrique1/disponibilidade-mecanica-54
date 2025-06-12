@@ -100,7 +100,7 @@ export const OrdensServico: React.FC = () => {
     setFormData({
       ...formData,
       composicaoId,
-      placaReferente: composicao ? composicao.placas.join(' ') : ''
+      placaReferente: `${composicao ? composicao.primeiraComposicao : ''} ${composicao ? composicao.segundaComposicao : ''}`
     });
   };
 
@@ -149,9 +149,8 @@ export const OrdensServico: React.FC = () => {
         if (formData.criarStandBy && formData.tipoVeiculo === 'composicao' && formData.composicaoId) {
           const composicao = composicoes.find(c => c.id === formData.composicaoId);
           
-          if (composicao && composicao.placas.length > 0) {
-            const primeiraPlaca = composicao.placas[0];
-            const cavaloStandBy = cavalos.find(c => c.placa === primeiraPlaca);
+          if (composicao && composicao.primeiraComposicao) {
+            const cavaloStandBy = cavalos.find(c => c.placa === composicao.primeiraComposicao);
             
             if (cavaloStandBy) {
               const osStandBy: Omit<OrdemServico, 'id' | 'createdAt'> = {
