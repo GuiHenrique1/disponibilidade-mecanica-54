@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Cores específicas do tema JSL para feedback
+				success: 'hsl(var(--success, 122 39% 49%))',
+				warning: 'hsl(var(--warning, 45 100% 51%))',
+				error: 'hsl(var(--error, 0 70% 50%))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
