@@ -15,13 +15,15 @@ export const CavalosMecanicos: React.FC = () => {
   const [cavalos, setCavalos] = useLocalStorage<CavaloMecanico[]>('cavalos-mecanicos', []);
   const [searchTerm, setSearchTerm] = useState('');
   const [importText, setImportText] = useState('');
+  const [newCavaloNomeFreota, setNewCavaloNomeFreota] = useState('');
   const [newCavaloPlaca, setNewCavaloPlaca] = useState('');
   const [editingCavalo, setEditingCavalo] = useState<CavaloMecanico | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredCavalos = cavalos.filter(cavalo =>
-    cavalo.placa.toLowerCase().includes(searchTerm.toLowerCase())
+    cavalo.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cavalo.nomeFreota.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleImportData = () => {
@@ -38,13 +40,19 @@ export const CavalosMecanicos: React.FC = () => {
     const novosCavalos: CavaloMecanico[] = [];
 
     linhas.forEach(linha => {
-      const placa = linha.trim();
-      if (placa && !cavalos.some(c => c.placa === placa)) {
-        novosCavalos.push({
-          id: crypto.randomUUID(),
-          placa,
-          createdAt: new Date()
-        });
+      const partes = linha.trim().split(/\s+/);
+      if (partes.length >= 2) {
+        const nomeFreota = partes[0];
+        const placa = partes[1];
+        
+        if (!cavalos.some(c => c.placa === placa || c.nomeFreota === nomeFreota)) {
+          novosCavalos.push({
+            id: crypto.randomUUID(),
+            nomeFreota,
+            placa,
+            createdAt: new Date()
+          });
+        }
       }
     });
 
@@ -58,19 +66,19 @@ export const CavalosMecanicos: React.FC = () => {
   };
 
   const handleAddCavalo = () => {
-    if (!newCavaloPlaca.trim()) {
+    if (!newCavaloNomeFreota.trim() || !newCavaloPlaca.trim()) {
       toast({
         title: "Erro",
-        description: "Por favor, insira uma placa.",
+        description: "Por favor, insira o nome da frota e a placa.",
         variant: "destructive"
       });
       return;
     }
 
-    if (cavalos.some(c => c.placa === newCavaloPlaca.trim())) {
+    if (cavalos.some(c => c.placa === newCavaloPlaca.trim() || c.nomeFreota === newCavaloNomeFreota.trim())) {
       toast({
         title: "Erro",
-        description: "Cavalo com esta placa já existe.",
+        description: "Cavalo com esta placa ou nome de frota já existe.",
         variant: "destructive"
       });
       return;
@@ -78,11 +86,13 @@ export const CavalosMecanicos: React.FC = () => {
 
     const novoCavalo: CavaloMecanico = {
       id: crypto.randomUUID(),
+      nomeFreota: newCavaloNomeFreota.trim(),
       placa: newCavaloPlaca.trim(),
       createdAt: new Date()
     };
 
     setCavalos([...cavalos, novoCavalo]);
+    setNewCavaloNomeFreota('');
     setNewCavaloPlaca('');
     setIsDialogOpen(false);
     
@@ -93,14 +103,19 @@ export const CavalosMecanicos: React.FC = () => {
   };
 
   const handleEditCavalo = (cavalo: CavaloMecanico) => {
-    if (!newCavaloPlaca.trim()) return;
+    if (!newCavaloNomeFreota.trim() || !newCavaloPlaca.trim()) return;
 
     const updatedCavalos = cavalos.map(c =>
-      c.id === cavalo.id ? { ...c, placa: newCavaloPlaca.trim() } : c
+      c.id === cavalo.id ? { 
+        ...c, 
+        nomeFreota: newCavaloNomeFreota.trim(),
+        placa: newCavaloPlaca.trim() 
+      } : c
     );
 
     setCavalos(updatedCavalos);
     setEditingCavalo(null);
+    setNewCavaloNomeFreota('');
     setNewCavaloPlaca('');
     setIsDialogOpen(false);
     
@@ -138,7 +153,7 @@ export const CavalosMecanicos: React.FC = () => {
           <CardHeader>
             <CardTitle>Importação em Massa - Cavalos Mecânicos</CardTitle>
             <CardDescription>
-              Cole as placas dos cavalos mecânicos, uma por linha (ex: T2506 SYL4A24)
+              Cole os dados dos cavalos mecânicos, uma entrada por linha no formato: Nome_da_Frota Placa (ex: T2506 SYL4A24)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -175,6 +190,7 @@ export const CavalosMecanicos: React.FC = () => {
             <DialogTrigger asChild>
               <Button onClick={() => {
                 setEditingCavalo(null);
+                setNewCavaloNomeFreota('');
                 setNewCavaloPlaca('');
               }}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -189,12 +205,21 @@ export const CavalosMecanicos: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
+                  <Label htmlFor="nomeFreota">Nome da Frota</Label>
+                  <Input
+                    id="nomeFreota"
+                    value={newCavaloNomeFreota}
+                    onChange={(e) => setNewCavaloNomeFreota(e.target.value)}
+                    placeholder="Ex: T2506"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="placa">Placa</Label>
                   <Input
                     id="placa"
                     value={newCavaloPlaca}
                     onChange={(e) => setNewCavaloPlaca(e.target.value)}
-                    placeholder="Ex: T2506 SYL4A24"
+                    placeholder="Ex: SYL4A24"
                   />
                 </div>
                 <Button 
@@ -223,7 +248,7 @@ export const CavalosMecanicos: React.FC = () => {
                 filteredCavalos.map((cavalo) => (
                   <div key={cavalo.id} className="flex items-center justify-between p-3 bg-accent rounded-lg">
                     <div>
-                      <p className="font-medium">{cavalo.placa}</p>
+                      <p className="font-medium">{cavalo.nomeFreota} - {cavalo.placa}</p>
                       <p className="text-sm text-muted-foreground">
                         Cadastrado em: {new Date(cavalo.createdAt).toLocaleDateString('pt-BR')}
                       </p>
@@ -234,6 +259,7 @@ export const CavalosMecanicos: React.FC = () => {
                         size="sm"
                         onClick={() => {
                           setEditingCavalo(cavalo);
+                          setNewCavaloNomeFreota(cavalo.nomeFreota);
                           setNewCavaloPlaca(cavalo.placa);
                           setIsDialogOpen(true);
                         }}
