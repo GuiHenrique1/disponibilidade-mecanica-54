@@ -23,15 +23,15 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     }
   ];
 
+  const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
+
   // Dados para o gráfico de barras
   const barData = dados.disponibilidadePorHora.map(hora => ({
     hora: `${hora.hora}h`,
     disponiveis: hora.totalDisponiveis,
-    meta: Math.round((metaDisponibilidade / 100) * dados.totalFrota),
-    acimaMeta: hora.totalDisponiveis >= (metaDisponibilidade / 100) * dados.totalFrota
+    meta: metaValue,
+    acimaMeta: hora.totalDisponiveis >= metaValue
   }));
-
-  const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
