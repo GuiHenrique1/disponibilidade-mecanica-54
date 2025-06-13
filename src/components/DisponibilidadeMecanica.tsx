@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,18 +15,25 @@ export const DisponibilidadeMecanica: React.FC = () => {
   const [ordensServico] = useLocalStorage<OrdemServico[]>('ordens-servico', []);
   
   const [dataAnalise, setDataAnalise] = useState(() => {
+    // Usar fuso horário local para definir data inicial
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
   const [metaCavalos, setMetaCavalos] = useState(90);
   const [metaComposicoes, setMetaComposicoes] = useState(90);
 
-  // Auto-atualização a cada hora quando em tempo real
+  // Auto-atualização a cada minuto quando em tempo real
   const [, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    const hoje = new Date().toISOString().split('T')[0];
-    if (dataAnalise === hoje) {
+    // Verificar se é hoje usando fuso horário local
+    const hoje = new Date();
+    const hojeString = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+    
+    if (dataAnalise === hojeString) {
       const interval = setInterval(() => {
         setRefreshTrigger(prev => prev + 1);
       }, 60000); // Atualiza a cada minuto
@@ -63,7 +69,7 @@ export const DisponibilidadeMecanica: React.FC = () => {
     );
   }, [composicoes.length, ordensServico, dataAnaliseFormatada]);
 
-  // Data e hora atual para exibição
+  // Data e hora atual para exibição (fuso horário local)
   const dataHoraAtual = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
@@ -72,8 +78,10 @@ export const DisponibilidadeMecanica: React.FC = () => {
     minute: '2-digit'
   });
 
-  // Verificar se é análise em tempo real
-  const isTempoReal = new Date().toISOString().split('T')[0] === dataAnalise;
+  // Verificar se é análise em tempo real usando fuso horário local
+  const hoje = new Date();
+  const hojeString = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const isTempoReal = dataAnalise === hojeString;
 
   return (
     <div className="space-y-6 p-6">

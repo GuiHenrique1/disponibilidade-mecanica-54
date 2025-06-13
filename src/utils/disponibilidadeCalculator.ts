@@ -8,19 +8,34 @@ export function calcularDisponibilidade(
 ): DadosDisponibilidade {
   const disponibilidadePorHora = [];
   
-  // Verificar se é análise do dia atual
+  // Verificar se é análise do dia atual usando fuso horário local
   const hoje = new Date();
   const [diaAnalise, mesAnalise, anoAnalise] = dataAnalise.split('-');
-  const dataAnaliseDate = new Date(`${anoAnalise}-${mesAnalise}-${diaAnalise}`);
   
+  // Criar data de análise em fuso horário local
+  const dataAnaliseDate = new Date(
+    parseInt(anoAnalise), 
+    parseInt(mesAnalise) - 1, 
+    parseInt(diaAnalise)
+  );
+  
+  // Comparar apenas as datas (ignorando horário)
   const isHoje = dataAnaliseDate.toDateString() === hoje.toDateString();
-  const horaAtual = isHoje ? hoje.getHours() : 23;
+  
+  // Se for hoje, pegar apenas até a hora atual, senão até 23h
+  const horaLimite = isHoje ? hoje.getHours() : 23;
 
-  // Calcular apenas até a hora atual se for hoje, senão até 23h
-  const horaLimite = isHoje ? horaAtual : 23;
-
+  // Calcular apenas até a hora limite
   for (let hora = 0; hora <= horaLimite; hora++) {
-    const dataHoraAnalise = new Date(`${dataAnalise.split('-').reverse().join('-')}T${hora.toString().padStart(2, '0')}:00:00`);
+    // Criar data/hora de análise em fuso horário local
+    const dataHoraAnalise = new Date(
+      parseInt(anoAnalise),
+      parseInt(mesAnalise) - 1,
+      parseInt(diaAnalise),
+      hora,
+      0,
+      0
+    );
     
     const veiculosIndisponiveis = ordensServico.filter(os => {
       if (os.tipoVeiculo !== tipoVeiculo) return false;
@@ -31,10 +46,16 @@ export function calcularDisponibilidade(
       const statusIndisponivel = ['Aberta', 'Concluída'].includes(os.status);
       if (!statusIndisponivel) return false;
 
-      // Criar data/hora de abertura
+      // Criar data/hora de abertura em fuso horário local
       const [diaAbertura, mesAbertura, anoAbertura] = os.dataAbertura.split('-');
       const [horaAbertura, minutoAbertura] = os.horaAbertura.split(':');
-      const dataAbertura = new Date(`${anoAbertura}-${mesAbertura}-${diaAbertura}T${horaAbertura}:${minutoAbertura}:00`);
+      const dataAbertura = new Date(
+        parseInt(anoAbertura),
+        parseInt(mesAbertura) - 1,
+        parseInt(diaAbertura),
+        parseInt(horaAbertura),
+        parseInt(minutoAbertura)
+      );
 
       // Se a OS ainda está aberta, verificar se a hora de análise está após a abertura
       if (os.status === 'Aberta' && !os.dataFechamento) {
@@ -45,7 +66,13 @@ export function calcularDisponibilidade(
       if (os.status === 'Concluída' && os.dataFechamento && os.horaFechamento) {
         const [diaFechamento, mesFechamento, anoFechamento] = os.dataFechamento.split('-');
         const [horaFechamento, minutoFechamento] = os.horaFechamento.split(':');
-        const dataFechamento = new Date(`${anoFechamento}-${mesFechamento}-${diaFechamento}T${horaFechamento}:${minutoFechamento}:00`);
+        const dataFechamento = new Date(
+          parseInt(anoFechamento),
+          parseInt(mesFechamento) - 1,
+          parseInt(diaFechamento),
+          parseInt(horaFechamento),
+          parseInt(minutoFechamento)
+        );
 
         return dataHoraAnalise >= dataAbertura && dataHoraAnalise <= dataFechamento;
       }
@@ -78,7 +105,7 @@ export function calcularDisponibilidade(
     mediaDisponibilidade,
     mediaVeiculosDisponiveis,
     isTempoReal: isHoje,
-    horaAtual: isHoje ? horaAtual : undefined
+    horaAtual: isHoje ? hoje.getHours() : undefined
   };
 }
 
