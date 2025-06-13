@@ -1,4 +1,3 @@
-
 export interface CavaloMecanico {
   id: string;
   nomeFreota: string; // Nome da frota (ex: T2506)
@@ -43,9 +42,10 @@ export interface OrdemServico {
 
 export interface DisponibilidadeHora {
   hora: number;
-  totalDisponiveis: number;
-  totalIndisponiveis: number;
-  percentualDisponibilidade: number;
+  totalDisponiveis: number | null;
+  totalIndisponiveis: number | null;
+  percentualDisponibilidade: number | null;
+  isHoraFutura?: boolean; // Added to support future hour detection
 }
 
 export interface DadosDisponibilidade {

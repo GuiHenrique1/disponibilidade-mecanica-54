@@ -8,6 +8,11 @@ interface DisponibilidadeTableProps {
 }
 
 export const DisponibilidadeTable: React.FC<DisponibilidadeTableProps> = ({ dados }) => {
+  // Calculate valid hours for averages (excluding future hours with null values)
+  const horasValidas = dados.disponibilidadePorHora.filter(h => h.totalDisponiveis !== null);
+  const mediaVeiculosIndisponiveis = horasValidas.length > 0 ?
+    horasValidas.reduce((acc, curr) => acc + (curr.totalIndisponiveis || 0), 0) / horasValidas.length : 0;
+
   return (
     <Card>
       <CardHeader>
@@ -32,7 +37,7 @@ export const DisponibilidadeTable: React.FC<DisponibilidadeTableProps> = ({ dado
                 <td className="p-2 font-medium">Total de veículos disponíveis</td>
                 {dados.disponibilidadePorHora.map((hora, index) => (
                   <td key={index} className="text-center p-1">
-                    {hora.totalDisponiveis}
+                    {hora.totalDisponiveis !== null ? hora.totalDisponiveis : '-'}
                   </td>
                 ))}
                 <td className="text-center p-2 bg-accent font-medium">
@@ -43,7 +48,7 @@ export const DisponibilidadeTable: React.FC<DisponibilidadeTableProps> = ({ dado
                 <td className="p-2 font-medium">Disponibilidade mecânica %</td>
                 {dados.disponibilidadePorHora.map((hora, index) => (
                   <td key={index} className="text-center p-1">
-                    {hora.percentualDisponibilidade.toFixed(1)}%
+                    {hora.percentualDisponibilidade !== null ? hora.percentualDisponibilidade.toFixed(1) + '%' : '-'}
                   </td>
                 ))}
                 <td className="text-center p-2 bg-accent font-medium">
@@ -65,11 +70,11 @@ export const DisponibilidadeTable: React.FC<DisponibilidadeTableProps> = ({ dado
                 <td className="p-2 font-medium">Total de frotas indisponíveis</td>
                 {dados.disponibilidadePorHora.map((hora, index) => (
                   <td key={index} className="text-center p-1">
-                    {hora.totalIndisponiveis}
+                    {hora.totalIndisponiveis !== null ? hora.totalIndisponiveis : '-'}
                   </td>
                 ))}
                 <td className="text-center p-2 bg-accent font-medium">
-                  {(dados.totalFrota - dados.mediaVeiculosDisponiveis).toFixed(1)}
+                  {mediaVeiculosIndisponiveis.toFixed(1)}
                 </td>
               </tr>
             </tbody>
