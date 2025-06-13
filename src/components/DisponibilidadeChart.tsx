@@ -79,7 +79,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
   const renderBarLabel = (props: any) => {
     const { x, y, width, value, payload } = props;
     
-    // Verificar se payload existe e se não é hora futura ou sem dados
+    // Só mostrar se payload existe e tem dados reais (não é hora futura)
     if (!payload || payload.isHoraFutura || !payload.temDados) {
       return null;
     }
@@ -93,7 +93,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         fontSize="12"
         fontWeight="500"
       >
-        {value}
+        {payload.disponiveis}
       </text>
     );
   };
