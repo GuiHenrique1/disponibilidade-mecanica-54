@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from 'recharts';
 import { DadosDisponibilidade } from '@/types';
@@ -26,17 +27,32 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
 
   const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
 
-  // Dados para o gráfico de barras - filtrar apenas horas passadas se for tempo real
+  // Dados para o gráfico de barras - sempre 24 horas, mas com valores null para horas futuras
   const barData = dados.disponibilidadePorHora.map(hora => ({
     hora: `${hora.hora}h`,
     horaNumero: hora.hora,
-    disponiveis: hora.totalDisponiveis,
+    disponiveis: hora.totalDisponiveis, // null para horas futuras
     meta: metaValue,
-    acimaMeta: hora.totalDisponiveis >= metaValue
+    acimaMeta: hora.totalDisponiveis !== null ? hora.totalDisponiveis >= metaValue : false,
+    isHoraFutura: hora.isHoraFutura || false
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label, ...props }: any) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      
+      // Se for hora futura, mostrar tooltip diferente
+      if (data.isHoraFutura || data.disponiveis === null) {
+        return (
+          <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
+            <p className="text-sm font-medium">{`${label}`}</p>
+            <p className="text-sm text-muted-foreground">
+              Horário ainda não alcançado
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
           <p className="text-sm font-medium">{`${label}`}</p>
@@ -56,9 +72,15 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return `${value.toFixed(1)}%`;
   };
 
-  // Função para renderizar valores acima das barras
+  // Função para renderizar valores acima das barras apenas para horas passadas
   const renderBarLabel = (props: any) => {
-    const { x, y, width, value } = props;
+    const { x, y, width, value, payload } = props;
+    
+    // Não renderizar label para horas futuras ou valores null
+    if (payload.isHoraFutura || value === null) {
+      return null;
+    }
+    
     return (
       <text 
         x={x + width / 2} 
@@ -71,6 +93,18 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         {Math.round(value)}
       </text>
     );
+  };
+
+  // Custom Bar para renderizar apenas horas passadas
+  const CustomBar = (props: any) => {
+    const { payload, ...rest } = props;
+    
+    // Se for hora futura, não renderizar a barra
+    if (payload.isHoraFutura || payload.disponiveis === null) {
+      return null;
+    }
+    
+    return <Bar {...rest} />;
   };
 
   const tipoVeiculoTexto = tipoVeiculo === 'cavalos' ? 'Cavalos Mecânicos' : 'Composições';
@@ -93,8 +127,8 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={20}
-              outerRadius={45}
+              innerRadius={25}
+              outerRadius={50}
               paddingAngle={2}
               dataKey="value"
               labelLine={false}
@@ -124,7 +158,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           Disponibilidade por Hora - {tipoVeiculoTexto}
           {tempoRealInfo}
         </h3>
-        <ResponsiveContainer width="100%" height={480}>
+        <ResponsiveContainer width="100%" height={450}>
           <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
@@ -139,9 +173,15 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="disponiveis" radius={[4, 4, 0, 0]} style={{ zIndex: 2 }}>
               <LabelList content={renderBarLabel} />
-              {barData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.acimaMeta ? '#10b981' : '#ef4444'} />
-              ))}
+              {barData.map((entry, index) => {
+                // Só colorir barras que têm dados (não futuras)
+                if (entry.isHoraFutura || entry.disponiveis === null) {
+                  return <Cell key={`cell-${index}`} fill="transparent" />;
+                }
+                return (
+                  <Cell key={`cell-${index}`} fill={entry.acimaMeta ? '#10b981' : '#ef4444'} />
+                );
+              })}
             </Bar>
             <ReferenceLine 
               y={metaValue} 

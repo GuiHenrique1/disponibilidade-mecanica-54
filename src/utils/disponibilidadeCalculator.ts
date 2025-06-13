@@ -1,3 +1,4 @@
+
 import { OrdemServico, DadosDisponibilidade } from '@/types';
 
 export function calcularDisponibilidade(
@@ -22,11 +23,8 @@ export function calcularDisponibilidade(
   // Comparar apenas as datas (ignorando horário)
   const isHoje = dataAnaliseDate.toDateString() === hoje.toDateString();
   
-  // Se for hoje, pegar apenas até a hora atual, senão até 23h
-  const horaLimite = isHoje ? hoje.getHours() : 23;
-
-  // Calcular apenas até a hora limite
-  for (let hora = 0; hora <= horaLimite; hora++) {
+  // Sempre gerar dados para 24 horas (0-23)
+  for (let hora = 0; hora <= 23; hora++) {
     // Criar data/hora de análise em fuso horário local
     const dataHoraAnalise = new Date(
       parseInt(anoAnalise),
@@ -37,67 +35,78 @@ export function calcularDisponibilidade(
       0
     );
     
-    const veiculosIndisponiveis = ordensServico.filter(os => {
-      if (os.tipoVeiculo !== tipoVeiculo) return false;
-      
-      // Verificar se a OS está em status que causa indisponibilidade
-      // Apenas "Aberta" e "Concluída" causam indisponibilidade
-      // OSs "Cancelada" são ignoradas completamente
-      const statusIndisponivel = ['Aberta', 'Concluída'].includes(os.status);
-      if (!statusIndisponivel) return false;
+    // Se for hoje e a hora ainda não chegou, marcar como futura
+    const isHoraFutura = isHoje && hora > hoje.getHours();
+    
+    let veiculosIndisponiveis = 0;
+    let totalDisponiveis = totalFrota;
+    let percentualDisponibilidade = 100;
 
-      // Criar data/hora de abertura em fuso horário local
-      const [diaAbertura, mesAbertura, anoAbertura] = os.dataAbertura.split('-');
-      const [horaAbertura, minutoAbertura] = os.horaAbertura.split(':');
-      const dataAbertura = new Date(
-        parseInt(anoAbertura),
-        parseInt(mesAbertura) - 1,
-        parseInt(diaAbertura),
-        parseInt(horaAbertura),
-        parseInt(minutoAbertura)
-      );
+    // Só calcular indisponibilidade para horas passadas ou se não for hoje
+    if (!isHoraFutura) {
+      veiculosIndisponiveis = ordensServico.filter(os => {
+        if (os.tipoVeiculo !== tipoVeiculo) return false;
+        
+        // Verificar se a OS está em status que causa indisponibilidade
+        // Apenas "Aberta" e "Concluída" causam indisponibilidade
+        // OSs "Cancelada" são ignoradas completamente
+        const statusIndisponivel = ['Aberta', 'Concluída'].includes(os.status);
+        if (!statusIndisponivel) return false;
 
-      // Se a OS ainda está aberta, verificar se a hora de análise está após a abertura
-      if (os.status === 'Aberta' && !os.dataFechamento) {
-        return dataHoraAnalise >= dataAbertura;
-      }
-
-      // Se a OS foi concluída, verificar se a hora de análise está no período de indisponibilidade
-      if (os.status === 'Concluída' && os.dataFechamento && os.horaFechamento) {
-        const [diaFechamento, mesFechamento, anoFechamento] = os.dataFechamento.split('-');
-        const [horaFechamento, minutoFechamento] = os.horaFechamento.split(':');
-        const dataFechamento = new Date(
-          parseInt(anoFechamento),
-          parseInt(mesFechamento) - 1,
-          parseInt(diaFechamento),
-          parseInt(horaFechamento),
-          parseInt(minutoFechamento)
+        // Criar data/hora de abertura em fuso horário local
+        const [diaAbertura, mesAbertura, anoAbertura] = os.dataAbertura.split('-');
+        const [horaAbertura, minutoAbertura] = os.horaAbertura.split(':');
+        const dataAbertura = new Date(
+          parseInt(anoAbertura),
+          parseInt(mesAbertura) - 1,
+          parseInt(diaAbertura),
+          parseInt(horaAbertura),
+          parseInt(minutoAbertura)
         );
 
-        return dataHoraAnalise >= dataAbertura && dataHoraAnalise <= dataFechamento;
-      }
+        // Se a OS ainda está aberta, verificar se a hora de análise está após a abertura
+        if (os.status === 'Aberta' && !os.dataFechamento) {
+          return dataHoraAnalise >= dataAbertura;
+        }
 
-      // Se chegou aqui, a OS não causa indisponibilidade nesta hora
-      return false;
-    }).length;
+        // Se a OS foi concluída, verificar se a hora de análise está no período de indisponibilidade
+        if (os.status === 'Concluída' && os.dataFechamento && os.horaFechamento) {
+          const [diaFechamento, mesFechamento, anoFechamento] = os.dataFechamento.split('-');
+          const [horaFechamento, minutoFechamento] = os.horaFechamento.split(':');
+          const dataFechamento = new Date(
+            parseInt(anoFechamento),
+            parseInt(mesFechamento) - 1,
+            parseInt(diaFechamento),
+            parseInt(horaFechamento),
+            parseInt(minutoFechamento)
+          );
 
-    const totalDisponiveis = Math.max(0, totalFrota - veiculosIndisponiveis);
-    const percentualDisponibilidade = totalFrota > 0 ? (totalDisponiveis / totalFrota) * 100 : 100;
+          return dataHoraAnalise >= dataAbertura && dataHoraAnalise <= dataFechamento;
+        }
+
+        // Se chegou aqui, a OS não causa indisponibilidade nesta hora
+        return false;
+      }).length;
+
+      totalDisponiveis = Math.max(0, totalFrota - veiculosIndisponiveis);
+      percentualDisponibilidade = totalFrota > 0 ? (totalDisponiveis / totalFrota) * 100 : 100;
+    }
 
     disponibilidadePorHora.push({
       hora,
-      totalDisponiveis,
-      totalIndisponiveis: veiculosIndisponiveis,
-      percentualDisponibilidade
+      totalDisponiveis: isHoraFutura ? null : totalDisponiveis, // null para horas futuras
+      totalIndisponiveis: isHoraFutura ? null : veiculosIndisponiveis,
+      percentualDisponibilidade: isHoraFutura ? null : percentualDisponibilidade,
+      isHoraFutura // Adicionar flag para identificar horas futuras
     });
   }
 
   // Calcular média apenas das horas válidas (passadas)
-  const horasValidas = disponibilidadePorHora.length;
-  const mediaDisponibilidade = horasValidas > 0 ? 
-    disponibilidadePorHora.reduce((acc, curr) => acc + curr.percentualDisponibilidade, 0) / horasValidas : 100;
-  const mediaVeiculosDisponiveis = horasValidas > 0 ?
-    disponibilidadePorHora.reduce((acc, curr) => acc + curr.totalDisponiveis, 0) / horasValidas : totalFrota;
+  const horasValidas = disponibilidadePorHora.filter(h => !h.isHoraFutura);
+  const mediaDisponibilidade = horasValidas.length > 0 ? 
+    horasValidas.reduce((acc, curr) => acc + (curr.percentualDisponibilidade || 0), 0) / horasValidas.length : 100;
+  const mediaVeiculosDisponiveis = horasValidas.length > 0 ?
+    horasValidas.reduce((acc, curr) => acc + (curr.totalDisponiveis || 0), 0) / horasValidas.length : totalFrota;
 
   return {
     totalFrota,
