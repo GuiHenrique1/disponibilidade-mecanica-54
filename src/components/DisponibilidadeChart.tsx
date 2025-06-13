@@ -130,7 +130,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               strokeDasharray="none"
               label={{ 
                 value: `Meta: ${metaValue.toFixed(1)}`, 
-                position: "topRight",
+                position: "right",
                 fill: "#ef4444",
                 fontSize: 12,
                 fontWeight: "bold"
