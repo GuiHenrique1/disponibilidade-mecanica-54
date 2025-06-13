@@ -27,11 +27,11 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
   const barData = dados.disponibilidadePorHora.map(hora => ({
     hora: `${hora.hora}h`,
     disponiveis: hora.totalDisponiveis,
-    meta: (metaDisponibilidade / 100) * dados.totalFrota,
+    meta: Math.round((metaDisponibilidade / 100) * dados.totalFrota),
     acimaMeta: hora.totalDisponiveis >= (metaDisponibilidade / 100) * dados.totalFrota
   }));
 
-  const metaValue = (metaDisponibilidade / 100) * dados.totalFrota;
+  const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -39,10 +39,10 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
           <p className="text-sm font-medium">{`${label}`}</p>
           <p className="text-sm text-blue-600">
-            {`Disponíveis: ${payload[0].value} veículos`}
+            {`Disponíveis: ${Math.round(payload[0].value)} veículos`}
           </p>
           <p className="text-sm text-gray-600">
-            {`Meta: ${metaValue.toFixed(1)} veículos`}
+            {`Meta: ${metaValue} veículos`}
           </p>
         </div>
       );
@@ -66,7 +66,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         fontSize="12"
         fontWeight="500"
       >
-        {value}
+        {Math.round(value)}
       </text>
     );
   };
@@ -76,14 +76,14 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       {/* Gráfico de Rosca - Menor */}
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Disponibilidade Mecânica</h3>
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={45}
-              outerRadius={80}
+              innerRadius={35}
+              outerRadius={65}
               paddingAngle={2}
               dataKey="value"
               labelLine={false}
@@ -102,7 +102,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
             Meta: {metaDisponibilidade}%
           </p>
           <p className="text-xs text-muted-foreground">
-            {dados.mediaVeiculosDisponiveis.toFixed(1)} veículos em média
+            {Math.round(dados.mediaVeiculosDisponiveis)} veículos em média
           </p>
         </div>
       </div>
@@ -110,7 +110,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       {/* Gráfico de Barras - Maior (2 colunas) */}
       <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Disponibilidade por Hora</h3>
-        <ResponsiveContainer width="100%" height={350}>
+        <ResponsiveContainer width="100%" height={400}>
           <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
@@ -129,7 +129,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               strokeWidth={3}
               strokeDasharray="none"
               label={{ 
-                value: `Meta: ${metaValue.toFixed(1)}`, 
+                value: `Meta: ${metaValue}`, 
                 position: "right",
                 fill: "#ef4444",
                 fontSize: 12,
