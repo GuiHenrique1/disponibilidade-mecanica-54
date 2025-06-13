@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +21,20 @@ export const DisponibilidadeMecanica: React.FC = () => {
   });
   const [metaCavalos, setMetaCavalos] = useState(90);
   const [metaComposicoes, setMetaComposicoes] = useState(90);
+
+  // Auto-atualização a cada hora quando em tempo real
+  const [, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const hoje = new Date().toISOString().split('T')[0];
+    if (dataAnalise === hoje) {
+      const interval = setInterval(() => {
+        setRefreshTrigger(prev => prev + 1);
+      }, 60000); // Atualiza a cada minuto
+
+      return () => clearInterval(interval);
+    }
+  }, [dataAnalise]);
 
   // Converter data para formato DD-MM-AAAA
   const dataAnaliseFormatada = useMemo(() => {
@@ -58,12 +72,20 @@ export const DisponibilidadeMecanica: React.FC = () => {
     minute: '2-digit'
   });
 
+  // Verificar se é análise em tempo real
+  const isTempoReal = new Date().toISOString().split('T')[0] === dataAnalise;
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Disponibilidade Mecânica</h1>
         <div className="text-sm text-muted-foreground">
           {dataHoraAtual}
+          {isTempoReal && (
+            <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+              Tempo Real
+            </span>
+          )}
         </div>
       </div>
 
@@ -77,7 +99,7 @@ export const DisponibilidadeMecanica: React.FC = () => {
           {/* Controles para Cavalos */}
           <Card>
             <CardHeader>
-              <CardTitle>Controles de Análise - Cavalos Mecânicos</CardTitle>
+              <CardTitle className="text-center">Controles de Análise - Cavalos Mecânicos</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -154,7 +176,7 @@ export const DisponibilidadeMecanica: React.FC = () => {
           {/* Controles para Composições */}
           <Card>
             <CardHeader>
-              <CardTitle>Controles de Análise - Composições</CardTitle>
+              <CardTitle className="text-center">Controles de Análise - Composições</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

@@ -1,4 +1,3 @@
-
 import { OrdemServico, DadosDisponibilidade } from '@/types';
 
 export function calcularDisponibilidade(
@@ -8,8 +7,19 @@ export function calcularDisponibilidade(
   tipoVeiculo: 'frota' | 'composicao'
 ): DadosDisponibilidade {
   const disponibilidadePorHora = [];
+  
+  // Verificar se é análise do dia atual
+  const hoje = new Date();
+  const [diaAnalise, mesAnalise, anoAnalise] = dataAnalise.split('-');
+  const dataAnaliseDate = new Date(`${anoAnalise}-${mesAnalise}-${diaAnalise}`);
+  
+  const isHoje = dataAnaliseDate.toDateString() === hoje.toDateString();
+  const horaAtual = isHoje ? hoje.getHours() : 23;
 
-  for (let hora = 0; hora < 24; hora++) {
+  // Calcular apenas até a hora atual se for hoje, senão até 23h
+  const horaLimite = isHoje ? horaAtual : 23;
+
+  for (let hora = 0; hora <= horaLimite; hora++) {
     const dataHoraAnalise = new Date(`${dataAnalise.split('-').reverse().join('-')}T${hora.toString().padStart(2, '0')}:00:00`);
     
     const veiculosIndisponiveis = ordensServico.filter(os => {
@@ -55,14 +65,20 @@ export function calcularDisponibilidade(
     });
   }
 
-  const mediaDisponibilidade = disponibilidadePorHora.reduce((acc, curr) => acc + curr.percentualDisponibilidade, 0) / 24;
-  const mediaVeiculosDisponiveis = disponibilidadePorHora.reduce((acc, curr) => acc + curr.totalDisponiveis, 0) / 24;
+  // Calcular média apenas das horas válidas (passadas)
+  const horasValidas = disponibilidadePorHora.length;
+  const mediaDisponibilidade = horasValidas > 0 ? 
+    disponibilidadePorHora.reduce((acc, curr) => acc + curr.percentualDisponibilidade, 0) / horasValidas : 100;
+  const mediaVeiculosDisponiveis = horasValidas > 0 ?
+    disponibilidadePorHora.reduce((acc, curr) => acc + curr.totalDisponiveis, 0) / horasValidas : totalFrota;
 
   return {
     totalFrota,
     disponibilidadePorHora,
     mediaDisponibilidade,
-    mediaVeiculosDisponiveis
+    mediaVeiculosDisponiveis,
+    isTempoReal: isHoje,
+    horaAtual: isHoje ? horaAtual : undefined
   };
 }
 

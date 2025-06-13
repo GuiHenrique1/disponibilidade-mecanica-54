@@ -26,9 +26,10 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
 
   const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
 
-  // Dados para o gráfico de barras
+  // Dados para o gráfico de barras - filtrar apenas horas passadas se for tempo real
   const barData = dados.disponibilidadePorHora.map(hora => ({
     hora: `${hora.hora}h`,
+    horaNumero: hora.hora,
     disponiveis: hora.totalDisponiveis,
     meta: metaValue,
     acimaMeta: hora.totalDisponiveis >= metaValue
@@ -74,19 +75,26 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
 
   const tipoVeiculoTexto = tipoVeiculo === 'cavalos' ? 'Cavalos Mecânicos' : 'Composições';
 
+  // Informação sobre tempo real
+  const tempoRealInfo = dados.isTempoReal ? (
+    <span className="text-xs text-muted-foreground ml-2">
+      (até {dados.horaAtual}h - tempo real)
+    </span>
+  ) : null;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Gráfico de Rosca - Menor ainda */}
+      {/* Gráfico de Rosca - Menor */}
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-center">Disponibilidade Mecânica</h3>
-        <ResponsiveContainer width="100%" height={160}>
+        <ResponsiveContainer width="100%" height={140}>
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={25}
-              outerRadius={50}
+              innerRadius={20}
+              outerRadius={45}
               paddingAngle={2}
               dataKey="value"
               labelLine={false}
@@ -112,8 +120,11 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
 
       {/* Gráfico de Barras - Maior (3 colunas) */}
       <div className="lg:col-span-3 bg-card border border-border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 text-center">Disponibilidade por Hora - {tipoVeiculoTexto}</h3>
-        <ResponsiveContainer width="100%" height={450}>
+        <h3 className="text-lg font-semibold mb-4 text-center">
+          Disponibilidade por Hora - {tipoVeiculoTexto}
+          {tempoRealInfo}
+        </h3>
+        <ResponsiveContainer width="100%" height={480}>
           <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
