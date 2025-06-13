@@ -107,34 +107,34 @@ export const DisponibilidadeMecanica: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Total de Cavalos</CardTitle>
+                <CardTitle className="text-sm text-center">Total de Cavalos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dadosCavalos.totalFrota}</div>
+                <div className="text-2xl font-bold text-center">{dadosCavalos.totalFrota}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Disponibilidade Média</CardTitle>
+                <CardTitle className="text-sm text-center">Disponibilidade Média</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dadosCavalos.mediaDisponibilidade.toFixed(1)}%</div>
+                <div className="text-2xl font-bold text-center">{dadosCavalos.mediaDisponibilidade.toFixed(1)}%</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Veículos Disponíveis (Média)</CardTitle>
+                <CardTitle className="text-sm text-center">Veículos Disponíveis (Média)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dadosCavalos.mediaVeiculosDisponiveis.toFixed(1)}</div>
+                <div className="text-2xl font-bold text-center">{dadosCavalos.mediaVeiculosDisponiveis.toFixed(1)}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Status da Meta</CardTitle>
+                <CardTitle className="text-sm text-center">Status da Meta</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${
+                <div className={`text-2xl font-bold text-center ${
                   dadosCavalos.mediaDisponibilidade >= metaCavalos ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {dadosCavalos.mediaDisponibilidade >= metaCavalos ? 'ATINGIDA' : 'NÃO ATINGIDA'}
@@ -144,7 +144,7 @@ export const DisponibilidadeMecanica: React.FC = () => {
           </div>
 
           {/* Gráficos Cavalos */}
-          <DisponibilidadeChart dados={dadosCavalos} metaDisponibilidade={metaCavalos} />
+          <DisponibilidadeChart dados={dadosCavalos} metaDisponibilidade={metaCavalos} tipoVeiculo="cavalos" />
 
           {/* Tabela Cavalos */}
           <DisponibilidadeTable dados={dadosCavalos} />
@@ -184,34 +184,34 @@ export const DisponibilidadeMecanica: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Total de Composições</CardTitle>
+                <CardTitle className="text-sm text-center">Total de Composições</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dadosComposicoes.totalFrota}</div>
+                <div className="text-2xl font-bold text-center">{dadosComposicoes.totalFrota}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Disponibilidade Média</CardTitle>
+                <CardTitle className="text-sm text-center">Disponibilidade Média</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dadosComposicoes.mediaDisponibilidade.toFixed(1)}%</div>
+                <div className="text-2xl font-bold text-center">{dadosComposicoes.mediaDisponibilidade.toFixed(1)}%</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Composições Disponíveis (Média)</CardTitle>
+                <CardTitle className="text-sm text-center">Composições Disponíveis (Média)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{dadosComposicoes.mediaVeiculosDisponiveis.toFixed(1)}</div>
+                <div className="text-2xl font-bold text-center">{dadosComposicoes.mediaVeiculosDisponiveis.toFixed(1)}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Status da Meta</CardTitle>
+                <CardTitle className="text-sm text-center">Status da Meta</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${
+                <div className={`text-2xl font-bold text-center ${
                   dadosComposicoes.mediaDisponibilidade >= metaComposicoes ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {dadosComposicoes.mediaDisponibilidade >= metaComposicoes ? 'ATINGIDA' : 'NÃO ATINGIDA'}
@@ -221,7 +221,7 @@ export const DisponibilidadeMecanica: React.FC = () => {
           </div>
 
           {/* Gráficos Composições */}
-          <DisponibilidadeChart dados={dadosComposicoes} metaDisponibilidade={metaComposicoes} />
+          <DisponibilidadeChart dados={dadosComposicoes} metaDisponibilidade={metaComposicoes} tipoVeiculo="composicoes" />
 
           {/* Tabela Composições */}
           <DisponibilidadeTable dados={dadosComposicoes} />

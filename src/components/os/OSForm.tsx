@@ -140,7 +140,7 @@ export const OSForm: React.FC<OSFormProps> = ({
           id="placaReferente"
           value={formData.placaReferente}
           readOnly
-          className="bg-gray-100"
+          className="bg-muted text-foreground border-border"
           placeholder="Será preenchido automaticamente"
         />
       </div>
@@ -156,7 +156,7 @@ export const OSForm: React.FC<OSFormProps> = ({
       </div>
 
       {showStandByCheckbox && (
-        <div className="md:col-span-2 flex items-center space-x-2 p-3 border rounded-md bg-blue-50">
+        <div className="md:col-span-2 flex items-center space-x-2 p-3 border border-border rounded-md bg-accent/20">
           <Checkbox
             id="criarStandBy"
             checked={formData.criarStandBy}
@@ -164,7 +164,7 @@ export const OSForm: React.FC<OSFormProps> = ({
               setFormData({...formData, criarStandBy: checked as boolean});
             }}
           />
-          <Label htmlFor="criarStandBy" className="text-sm font-medium">
+          <Label htmlFor="criarStandBy" className="text-sm font-medium text-foreground">
             Abrir OS Stand-by para Veículo Selecionado
           </Label>
         </div>
