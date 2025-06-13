@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CavaloMecanico, Composicao, Motorista, OrdemServico } from '@/types';
-import { dataService } from '@/services/dataService';
+import { crudService } from '@/services/crudService';
 import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
@@ -36,6 +36,11 @@ interface AppContextType {
   addOrdemServico: (os: Omit<OrdemServico, 'id' | 'createdAt'>) => Promise<boolean>;
   updateOrdemServico: (id: string, updates: Partial<OrdemServico>) => Promise<boolean>;
   deleteOrdemServico: (id: string) => Promise<boolean>;
+  
+  // Bulk operations
+  importCavalosEmMassa: (textData: string) => Promise<{ success: number; errors: string[] }>;
+  importComposicoesEmMassa: (textData: string) => Promise<{ success: number; errors: string[] }>;
+  importMotoristasEmMassa: (textData: string) => Promise<{ success: number; errors: string[] }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -65,10 +70,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshData = () => {
     try {
-      setCavalos(dataService.getCavalos());
-      setComposicoes(dataService.getComposicoes());
-      setMotoristas(dataService.getMotoristas());
-      setOrdensServico(dataService.getOrdensServico());
+      setCavalos(crudService.getCavalos());
+      setComposicoes(crudService.getComposicoes());
+      setMotoristas(crudService.getMotoristas());
+      setOrdensServico(crudService.getOrdensServico());
     } catch (error) {
       toast({
         title: "Erro",
@@ -82,287 +87,216 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshData();
   }, []);
 
-  // Cavalos Mecânicos
-  const addCavalo = async (cavalo: Omit<CavaloMecanico, 'id' | 'createdAt'>): Promise<boolean> => {
+  // Generic error handler
+  const handleOperation = async <T,>(
+    operation: () => T,
+    loadingKey: keyof typeof loading,
+    successMessage: string,
+    errorMessage: string
+  ): Promise<boolean> => {
     try {
-      setLoading(prev => ({ ...prev, cavalos: true }));
-      dataService.addCavalo(cavalo);
+      setLoading(prev => ({ ...prev, [loadingKey]: true }));
+      operation();
       refreshData();
       toast({
         title: "Sucesso",
-        description: "Cavalo mecânico adicionado com sucesso"
+        description: successMessage
       });
       return true;
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao adicionar cavalo mecânico",
+        description: error instanceof Error ? error.message : errorMessage,
         variant: "destructive"
       });
       return false;
     } finally {
-      setLoading(prev => ({ ...prev, cavalos: false }));
+      setLoading(prev => ({ ...prev, [loadingKey]: false }));
     }
+  };
+
+  // Cavalos Mecânicos
+  const addCavalo = async (cavalo: Omit<CavaloMecanico, 'id' | 'createdAt'>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.addCavalo(cavalo),
+      'cavalos',
+      'Cavalo mecânico adicionado com sucesso',
+      'Erro ao adicionar cavalo mecânico'
+    );
   };
 
   const updateCavalo = async (id: string, updates: Partial<CavaloMecanico>): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, cavalos: true }));
-      const success = dataService.updateCavalo(id, updates);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Cavalo mecânico atualizado com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar cavalo mecânico",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, cavalos: false }));
-    }
+    return handleOperation(
+      () => crudService.updateCavalo(id, updates),
+      'cavalos',
+      'Cavalo mecânico atualizado com sucesso',
+      'Erro ao atualizar cavalo mecânico'
+    );
   };
 
   const deleteCavalo = async (id: string): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.deleteCavalo(id),
+      'cavalos',
+      'Cavalo mecânico removido com sucesso',
+      'Erro ao remover cavalo mecânico'
+    );
+  };
+
+  // Composições
+  const addComposicao = async (composicao: Omit<Composicao, 'id' | 'createdAt'>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.addComposicao(composicao),
+      'composicoes',
+      'Composição adicionada com sucesso',
+      'Erro ao adicionar composição'
+    );
+  };
+
+  const updateComposicao = async (id: string, updates: Partial<Composicao>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.updateComposicao(id, updates),
+      'composicoes',
+      'Composição atualizada com sucesso',
+      'Erro ao atualizar composição'
+    );
+  };
+
+  const deleteComposicao = async (id: string): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.deleteComposicao(id),
+      'composicoes',
+      'Composição removida com sucesso',
+      'Erro ao remover composição'
+    );
+  };
+
+  // Motoristas
+  const addMotorista = async (motorista: Omit<Motorista, 'id' | 'createdAt'>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.addMotorista(motorista),
+      'motoristas',
+      'Motorista adicionado com sucesso',
+      'Erro ao adicionar motorista'
+    );
+  };
+
+  const updateMotorista = async (id: string, updates: Partial<Motorista>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.updateMotorista(id, updates),
+      'motoristas',
+      'Motorista atualizado com sucesso',
+      'Erro ao atualizar motorista'
+    );
+  };
+
+  const deleteMotorista = async (id: string): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.deleteMotorista(id),
+      'motoristas',
+      'Motorista removido com sucesso',
+      'Erro ao remover motorista'
+    );
+  };
+
+  // Ordens de Serviço
+  const addOrdemServico = async (os: Omit<OrdemServico, 'id' | 'createdAt'>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.addOrdemServico(os),
+      'ordensServico',
+      'Ordem de serviço criada com sucesso',
+      'Erro ao criar ordem de serviço'
+    );
+  };
+
+  const updateOrdemServico = async (id: string, updates: Partial<OrdemServico>): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.updateOrdemServico(id, updates),
+      'ordensServico',
+      'Ordem de serviço atualizada com sucesso',
+      'Erro ao atualizar ordem de serviço'
+    );
+  };
+
+  const deleteOrdemServico = async (id: string): Promise<boolean> => {
+    return handleOperation(
+      () => crudService.deleteOrdemServico(id),
+      'ordensServico',
+      'Ordem de serviço removida com sucesso',
+      'Erro ao remover ordem de serviço'
+    );
+  };
+
+  // Bulk operations
+  const importCavalosEmMassa = async (textData: string): Promise<{ success: number; errors: string[] }> => {
     try {
       setLoading(prev => ({ ...prev, cavalos: true }));
-      const success = dataService.deleteCavalo(id);
-      if (success) {
-        refreshData();
+      const result = crudService.importCavalosEmMassa(textData);
+      refreshData();
+      if (result.success > 0) {
         toast({
           title: "Sucesso",
-          description: "Cavalo mecânico removido com sucesso"
+          description: `${result.success} cavalos importados com sucesso`
         });
       }
-      return success;
+      return result;
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao remover cavalo mecânico",
+        description: "Erro ao importar cavalos",
         variant: "destructive"
       });
-      return false;
+      return { success: 0, errors: [error instanceof Error ? error.message : 'Erro desconhecido'] };
     } finally {
       setLoading(prev => ({ ...prev, cavalos: false }));
     }
   };
 
-  // Composições (similar pattern)
-  const addComposicao = async (composicao: Omit<Composicao, 'id' | 'createdAt'>): Promise<boolean> => {
+  const importComposicoesEmMassa = async (textData: string): Promise<{ success: number; errors: string[] }> => {
     try {
       setLoading(prev => ({ ...prev, composicoes: true }));
-      dataService.addComposicao(composicao);
+      const result = crudService.importComposicoesEmMassa(textData);
       refreshData();
-      toast({
-        title: "Sucesso",
-        description: "Composição adicionada com sucesso"
-      });
-      return true;
+      if (result.success > 0) {
+        toast({
+          title: "Sucesso",
+          description: `${result.success} composições importadas com sucesso`
+        });
+      }
+      return result;
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao adicionar composição",
+        description: "Erro ao importar composições",
         variant: "destructive"
       });
-      return false;
+      return { success: 0, errors: [error instanceof Error ? error.message : 'Erro desconhecido'] };
     } finally {
       setLoading(prev => ({ ...prev, composicoes: false }));
     }
   };
 
-  const updateComposicao = async (id: string, updates: Partial<Composicao>): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, composicoes: true }));
-      const success = dataService.updateComposicao(id, updates);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Composição atualizada com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar composição",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, composicoes: false }));
-    }
-  };
-
-  const deleteComposicao = async (id: string): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, composicoes: true }));
-      const success = dataService.deleteComposicao(id);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Composição removida com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao remover composição",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, composicoes: false }));
-    }
-  };
-
-  // Motoristas (similar pattern)
-  const addMotorista = async (motorista: Omit<Motorista, 'id' | 'createdAt'>): Promise<boolean> => {
+  const importMotoristasEmMassa = async (textData: string): Promise<{ success: number; errors: string[] }> => {
     try {
       setLoading(prev => ({ ...prev, motoristas: true }));
-      dataService.addMotorista(motorista);
+      const result = crudService.importMotoristasEmMassa(textData);
       refreshData();
-      toast({
-        title: "Sucesso",
-        description: "Motorista adicionado com sucesso"
-      });
-      return true;
+      if (result.success > 0) {
+        toast({
+          title: "Sucesso",
+          description: `${result.success} motoristas importados com sucesso`
+        });
+      }
+      return result;
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao adicionar motorista",
+        description: "Erro ao importar motoristas",
         variant: "destructive"
       });
-      return false;
+      return { success: 0, errors: [error instanceof Error ? error.message : 'Erro desconhecido'] };
     } finally {
       setLoading(prev => ({ ...prev, motoristas: false }));
-    }
-  };
-
-  const updateMotorista = async (id: string, updates: Partial<Motorista>): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, motoristas: true }));
-      const success = dataService.updateMotorista(id, updates);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Motorista atualizado com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar motorista",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, motoristas: false }));
-    }
-  };
-
-  const deleteMotorista = async (id: string): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, motoristas: true }));
-      const success = dataService.deleteMotorista(id);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Motorista removido com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao remover motorista",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, motoristas: false }));
-    }
-  };
-
-  // Ordens de Serviço (similar pattern)
-  const addOrdemServico = async (os: Omit<OrdemServico, 'id' | 'createdAt'>): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, ordensServico: true }));
-      dataService.addOrdemServico(os);
-      refreshData();
-      toast({
-        title: "Sucesso",
-        description: "Ordem de serviço criada com sucesso"
-      });
-      return true;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao criar ordem de serviço",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, ordensServico: false }));
-    }
-  };
-
-  const updateOrdemServico = async (id: string, updates: Partial<OrdemServico>): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, ordensServico: true }));
-      const success = dataService.updateOrdemServico(id, updates);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Ordem de serviço atualizada com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar ordem de serviço",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, ordensServico: false }));
-    }
-  };
-
-  const deleteOrdemServico = async (id: string): Promise<boolean> => {
-    try {
-      setLoading(prev => ({ ...prev, ordensServico: true }));
-      const success = dataService.deleteOrdemServico(id);
-      if (success) {
-        refreshData();
-        toast({
-          title: "Sucesso",
-          description: "Ordem de serviço removida com sucesso"
-        });
-      }
-      return success;
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao remover ordem de serviço",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      setLoading(prev => ({ ...prev, ordensServico: false }));
     }
   };
 
@@ -384,7 +318,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteMotorista,
     addOrdemServico,
     updateOrdemServico,
-    deleteOrdemServico
+    deleteOrdemServico,
+    importCavalosEmMassa,
+    importComposicoesEmMassa,
+    importMotoristasEmMassa
   };
 
   return (

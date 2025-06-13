@@ -7,12 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Motorista } from '@/types';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useAppData } from '@/hooks/useAppData';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const Motoristas: React.FC = () => {
-  const [motoristas, setMotoristas] = useLocalStorage<Motorista[]>('motoristas', []);
+  const { motoristas, loading, addMotorista, updateMotorista, deleteMotorista, importMotoristasEmMassa } = useAppData();
   const [searchTerm, setSearchTerm] = useState('');
   const [importText, setImportText] = useState('');
   const [newMotoristaNome, setNewMotoristaNome] = useState('');
@@ -24,7 +24,7 @@ export const Motoristas: React.FC = () => {
     motorista.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleImportData = () => {
+  const handleImportData = async () => {
     if (!importText.trim()) {
       toast({
         title: "Erro",
@@ -34,30 +34,20 @@ export const Motoristas: React.FC = () => {
       return;
     }
 
-    const linhas = importText.split('\n').filter(linha => linha.trim());
-    const novosMotoristas: Motorista[] = [];
-
-    linhas.forEach(linha => {
-      const nome = linha.trim();
-      if (nome && !motoristas.some(m => m.nome === nome)) {
-        novosMotoristas.push({
-          id: crypto.randomUUID(),
-          nome,
-          createdAt: new Date()
-        });
-      }
-    });
-
-    setMotoristas([...motoristas, ...novosMotoristas]);
-    setImportText('');
+    const result = await importMotoristasEmMassa(importText);
     
-    toast({
-      title: "Sucesso",
-      description: `${novosMotoristas.length} motoristas importados com sucesso.`
-    });
+    if (result.errors.length > 0) {
+      toast({
+        title: "Importação com erros",
+        description: `${result.success} importados, ${result.errors.length} erros`,
+        variant: "destructive"
+      });
+    }
+    
+    setImportText('');
   };
 
-  const handleAddMotorista = () => {
+  const handleAddMotorista = async () => {
     if (!newMotoristaNome.trim()) {
       toast({
         title: "Erro",
@@ -67,55 +57,32 @@ export const Motoristas: React.FC = () => {
       return;
     }
 
-    if (motoristas.some(m => m.nome === newMotoristaNome.trim())) {
-      toast({
-        title: "Erro",
-        description: "Motorista com este nome já existe.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const novoMotorista: Motorista = {
-      id: crypto.randomUUID(),
-      nome: newMotoristaNome.trim(),
-      createdAt: new Date()
-    };
-
-    setMotoristas([...motoristas, novoMotorista]);
-    setNewMotoristaNome('');
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Sucesso",
-      description: "Motorista adicionado com sucesso."
+    const success = await addMotorista({
+      nome: newMotoristaNome.trim()
     });
+
+    if (success) {
+      setNewMotoristaNome('');
+      setIsDialogOpen(false);
+    }
   };
 
-  const handleEditMotorista = (motorista: Motorista) => {
+  const handleEditMotorista = async (motorista: Motorista) => {
     if (!newMotoristaNome.trim()) return;
 
-    const updatedMotoristas = motoristas.map(m =>
-      m.id === motorista.id ? { ...m, nome: newMotoristaNome.trim() } : m
-    );
-
-    setMotoristas(updatedMotoristas);
-    setEditingMotorista(null);
-    setNewMotoristaNome('');
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Sucesso",
-      description: "Motorista atualizado com sucesso."
+    const success = await updateMotorista(motorista.id, {
+      nome: newMotoristaNome.trim()
     });
+
+    if (success) {
+      setEditingMotorista(null);
+      setNewMotoristaNome('');
+      setIsDialogOpen(false);
+    }
   };
 
-  const handleDeleteMotorista = (id: string) => {
-    setMotoristas(motoristas.filter(m => m.id !== id));
-    toast({
-      title: "Sucesso",
-      description: "Motorista removido com sucesso."
-    });
+  const handleDeleteMotorista = async (id: string) => {
+    await deleteMotorista(id);
   };
 
   return (
@@ -149,8 +116,12 @@ export const Motoristas: React.FC = () => {
               className="min-h-[120px]"
             />
             <div className="flex space-x-2">
-              <Button onClick={handleImportData} className="bg-primary hover:bg-primary/90">
-                Importar Dados
+              <Button 
+                onClick={handleImportData} 
+                className="bg-primary hover:bg-primary/90"
+                disabled={loading.motoristas}
+              >
+                {loading.motoristas ? 'Importando...' : 'Importar Dados'}
               </Button>
               <Button variant="outline" onClick={() => setImportText('')}>
                 Limpar
@@ -200,8 +171,9 @@ export const Motoristas: React.FC = () => {
                 <Button 
                   onClick={editingMotorista ? () => handleEditMotorista(editingMotorista) : handleAddMotorista}
                   className="w-full"
+                  disabled={loading.motoristas}
                 >
-                  {editingMotorista ? 'Atualizar' : 'Adicionar'}
+                  {loading.motoristas ? 'Processando...' : (editingMotorista ? 'Atualizar' : 'Adicionar')}
                 </Button>
               </div>
             </DialogContent>
@@ -237,6 +209,7 @@ export const Motoristas: React.FC = () => {
                           setNewMotoristaNome(motorista.nome);
                           setIsDialogOpen(true);
                         }}
+                        disabled={loading.motoristas}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -244,6 +217,7 @@ export const Motoristas: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteMotorista(motorista.id)}
+                        disabled={loading.motoristas}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -7,12 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { CavaloMecanico } from '@/types';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useAppData } from '@/hooks/useAppData';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const CavalosMecanicos: React.FC = () => {
-  const [cavalos, setCavalos] = useLocalStorage<CavaloMecanico[]>('cavalos-mecanicos', []);
+  const { cavalos, loading, addCavalo, updateCavalo, deleteCavalo, importCavalosEmMassa } = useAppData();
   const [searchTerm, setSearchTerm] = useState('');
   const [importText, setImportText] = useState('');
   const [newCavaloNomeFreota, setNewCavaloNomeFreota] = useState('');
@@ -26,7 +26,7 @@ export const CavalosMecanicos: React.FC = () => {
     cavalo.nomeFreota.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleImportData = () => {
+  const handleImportData = async () => {
     if (!importText.trim()) {
       toast({
         title: "Erro",
@@ -36,36 +36,20 @@ export const CavalosMecanicos: React.FC = () => {
       return;
     }
 
-    const linhas = importText.split('\n').filter(linha => linha.trim());
-    const novosCavalos: CavaloMecanico[] = [];
-
-    linhas.forEach(linha => {
-      const partes = linha.trim().split(/\s+/);
-      if (partes.length >= 2) {
-        const nomeFreota = partes[0];
-        const placa = partes[1];
-        
-        if (!cavalos.some(c => c.placa === placa || c.nomeFreota === nomeFreota)) {
-          novosCavalos.push({
-            id: crypto.randomUUID(),
-            nomeFreota,
-            placa,
-            createdAt: new Date()
-          });
-        }
-      }
-    });
-
-    setCavalos([...cavalos, ...novosCavalos]);
-    setImportText('');
+    const result = await importCavalosEmMassa(importText);
     
-    toast({
-      title: "Sucesso",
-      description: `${novosCavalos.length} cavalos mecânicos importados com sucesso.`
-    });
+    if (result.errors.length > 0) {
+      toast({
+        title: "Importação com erros",
+        description: `${result.success} importados, ${result.errors.length} erros`,
+        variant: "destructive"
+      });
+    }
+    
+    setImportText('');
   };
 
-  const handleAddCavalo = () => {
+  const handleAddCavalo = async () => {
     if (!newCavaloNomeFreota.trim() || !newCavaloPlaca.trim()) {
       toast({
         title: "Erro",
@@ -75,62 +59,36 @@ export const CavalosMecanicos: React.FC = () => {
       return;
     }
 
-    if (cavalos.some(c => c.placa === newCavaloPlaca.trim() || c.nomeFreota === newCavaloNomeFreota.trim())) {
-      toast({
-        title: "Erro",
-        description: "Cavalo com esta placa ou nome de frota já existe.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const novoCavalo: CavaloMecanico = {
-      id: crypto.randomUUID(),
+    const success = await addCavalo({
       nomeFreota: newCavaloNomeFreota.trim(),
-      placa: newCavaloPlaca.trim(),
-      createdAt: new Date()
-    };
-
-    setCavalos([...cavalos, novoCavalo]);
-    setNewCavaloNomeFreota('');
-    setNewCavaloPlaca('');
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Sucesso",
-      description: "Cavalo mecânico adicionado com sucesso."
+      placa: newCavaloPlaca.trim()
     });
+
+    if (success) {
+      setNewCavaloNomeFreota('');
+      setNewCavaloPlaca('');
+      setIsDialogOpen(false);
+    }
   };
 
-  const handleEditCavalo = (cavalo: CavaloMecanico) => {
+  const handleEditCavalo = async (cavalo: CavaloMecanico) => {
     if (!newCavaloNomeFreota.trim() || !newCavaloPlaca.trim()) return;
 
-    const updatedCavalos = cavalos.map(c =>
-      c.id === cavalo.id ? { 
-        ...c, 
-        nomeFreota: newCavaloNomeFreota.trim(),
-        placa: newCavaloPlaca.trim() 
-      } : c
-    );
-
-    setCavalos(updatedCavalos);
-    setEditingCavalo(null);
-    setNewCavaloNomeFreota('');
-    setNewCavaloPlaca('');
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Sucesso",
-      description: "Cavalo mecânico atualizado com sucesso."
+    const success = await updateCavalo(cavalo.id, {
+      nomeFreota: newCavaloNomeFreota.trim(),
+      placa: newCavaloPlaca.trim()
     });
+
+    if (success) {
+      setEditingCavalo(null);
+      setNewCavaloNomeFreota('');
+      setNewCavaloPlaca('');
+      setIsDialogOpen(false);
+    }
   };
 
-  const handleDeleteCavalo = (id: string) => {
-    setCavalos(cavalos.filter(c => c.id !== id));
-    toast({
-      title: "Sucesso",
-      description: "Cavalo mecânico removido com sucesso."
-    });
+  const handleDeleteCavalo = async (id: string) => {
+    await deleteCavalo(id);
   };
 
   return (
@@ -164,8 +122,12 @@ export const CavalosMecanicos: React.FC = () => {
               className="min-h-[120px]"
             />
             <div className="flex space-x-2">
-              <Button onClick={handleImportData} className="bg-primary hover:bg-primary/90">
-                Importar Dados
+              <Button 
+                onClick={handleImportData} 
+                className="bg-primary hover:bg-primary/90"
+                disabled={loading.cavalos}
+              >
+                {loading.cavalos ? 'Importando...' : 'Importar Dados'}
               </Button>
               <Button variant="outline" onClick={() => setImportText('')}>
                 Limpar
@@ -225,8 +187,9 @@ export const CavalosMecanicos: React.FC = () => {
                 <Button 
                   onClick={editingCavalo ? () => handleEditCavalo(editingCavalo) : handleAddCavalo}
                   className="w-full"
+                  disabled={loading.cavalos}
                 >
-                  {editingCavalo ? 'Atualizar' : 'Adicionar'}
+                  {loading.cavalos ? 'Processando...' : (editingCavalo ? 'Atualizar' : 'Adicionar')}
                 </Button>
               </div>
             </DialogContent>
@@ -263,6 +226,7 @@ export const CavalosMecanicos: React.FC = () => {
                           setNewCavaloPlaca(cavalo.placa);
                           setIsDialogOpen(true);
                         }}
+                        disabled={loading.cavalos}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -270,6 +234,7 @@ export const CavalosMecanicos: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteCavalo(cavalo.id)}
+                        disabled={loading.cavalos}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

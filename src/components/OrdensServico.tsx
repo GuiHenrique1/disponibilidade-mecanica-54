@@ -1,15 +1,13 @@
 
 import React from 'react';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useAppData } from '@/hooks/useAppData';
 import { useOSForm } from '@/hooks/useOSForm';
 import { OSDialog } from './os/OSDialog';
 import { OSList } from './os/OSList';
 
 export const OrdensServico: React.FC = () => {
-  const [ordensServico, setOrdensServico] = useLocalStorage<OrdemServico[]>('ordens-servico', []);
-  const [cavalos] = useLocalStorage<CavaloMecanico[]>('cavalos-mecanicos', []);
-  const [composicoes] = useLocalStorage<Composicao[]>('composicoes', []);
+  const { ordensServico, cavalos, composicoes, addOrdemServico, updateOrdemServico, deleteOrdemServico } = useAppData();
 
   const {
     isDialogOpen,
@@ -27,7 +25,10 @@ export const OrdensServico: React.FC = () => {
     handleEdit,
     handleSubmit,
     handleDelete
-  } = useOSForm(ordensServico, setOrdensServico, cavalos, composicoes);
+  } = useOSForm(ordensServico, (updatedOS: OrdemServico[]) => {
+    // Esta função não é mais necessária pois o context gerencia o estado
+    // Mantemos para compatibilidade com o hook existente
+  }, cavalos, composicoes);
 
   return (
     <div className="space-y-6 p-6">
