@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from 'recharts';
 import { DadosDisponibilidade } from '@/types';
 
 interface DisponibilidadeChartProps {
@@ -31,6 +31,8 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     acimaMeta: hora.totalDisponiveis >= (metaDisponibilidade / 100) * dados.totalFrota
   }));
 
+  const metaValue = (metaDisponibilidade / 100) * dados.totalFrota;
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -40,7 +42,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
             {`Disponíveis: ${payload[0].value} veículos`}
           </p>
           <p className="text-sm text-gray-600">
-            {`Meta: ${payload[0].payload.meta.toFixed(1)} veículos`}
+            {`Meta: ${metaValue.toFixed(1)} veículos`}
           </p>
         </div>
       );
@@ -52,19 +54,36 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return `${value.toFixed(1)}%`;
   };
 
+  // Função para renderizar valores acima das barras
+  const renderBarLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y - 5} 
+        fill="#374151" 
+        textAnchor="middle" 
+        fontSize="12"
+        fontWeight="500"
+      >
+        {value}
+      </text>
+    );
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Gráfico de Rosca */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Gráfico de Rosca - Menor */}
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Disponibilidade Mecânica</h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250}>
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={100}
+              innerRadius={45}
+              outerRadius={80}
               paddingAngle={2}
               dataKey="value"
               labelLine={false}
@@ -88,26 +107,37 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         </div>
       </div>
 
-      {/* Gráfico de Barras */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      {/* Gráfico de Barras - Maior (2 colunas) */}
+      <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Disponibilidade por Hora</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={barData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
+        <ResponsiveContainer width="100%" height={350}>
+          <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey="hora" 
               fontSize={12}
-              interval={1}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
             <YAxis fontSize={12} />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine 
-              y={(metaDisponibilidade / 100) * dados.totalFrota} 
-              stroke="#f59e0b" 
-              strokeDasharray="5 5"
-              label="Meta"
+              y={metaValue} 
+              stroke="#ef4444" 
+              strokeWidth={3}
+              strokeDasharray="none"
+              label={{ 
+                value: `Meta: ${metaValue.toFixed(1)}`, 
+                position: "topRight",
+                fill: "#ef4444",
+                fontSize: 12,
+                fontWeight: "bold"
+              }}
             />
             <Bar dataKey="disponiveis" radius={[4, 4, 0, 0]}>
+              <LabelList content={renderBarLabel} />
               {barData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.acimaMeta ? '#10b981' : '#ef4444'} />
               ))}
