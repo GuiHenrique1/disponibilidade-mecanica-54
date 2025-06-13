@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
-import { Edit, Trash2, CheckCircle, Search } from 'lucide-react';
+import { OrdemServico, CavaloMecanico, Composicao, Motorista } from '@/types';
+import { Edit, Trash2, CheckCircle, Search, RefreshCw } from 'lucide-react';
 import { getStatusColor } from './OSFormUtils';
 import { useOSFilters } from '@/hooks/useOSFilters';
 
@@ -13,18 +13,22 @@ interface OSListProps {
   ordensServico: OrdemServico[];
   cavalos: CavaloMecanico[];
   composicoes: Composicao[];
+  motoristas: Motorista[];
   onEdit: (os: OrdemServico) => void;
   onDelete: (id: string) => void;
   onFinalize: (os: OrdemServico) => void;
+  onRefresh: () => void;
 }
 
 export const OSList: React.FC<OSListProps> = ({
   ordensServico,
   cavalos,
   composicoes,
+  motoristas,
   onEdit,
   onDelete,
-  onFinalize
+  onFinalize,
+  onRefresh
 }) => {
   const {
     filteredAndSortedOS,
@@ -49,13 +53,40 @@ export const OSList: React.FC<OSListProps> = ({
     }
   };
 
+  const getMotorista = (motoristaId?: string) => {
+    if (!motoristaId) return 'Não informado';
+    const motorista = motoristas.find(m => m.id === motoristaId);
+    return motorista ? motorista.nome : 'Não encontrado';
+  };
+
+  const formatDate = (date?: string) => {
+    if (!date) return '';
+    return date;
+  };
+
+  const formatTime = (time?: string) => {
+    if (!time) return '';
+    return time;
+  };
+
   // Obter tipos únicos de manutenção
   const tiposManutencao = Array.from(new Set(ordensServico.map(os => os.tipoManutencao)));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Ordens de Serviço Abertas ({openOrdersCount})</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>Ordens de Serviço Abertas ({openOrdersCount})</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            className="ml-2"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
         
         {/* Filtros e Pesquisa */}
         <div className="space-y-4">
@@ -64,7 +95,7 @@ export const OSList: React.FC<OSListProps> = ({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Pesquisar por ID, descrição, placa, tipo..."
+                placeholder="Pesquisar por ID, descrição, placa, tipo, motorista..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -133,14 +164,18 @@ export const OSList: React.FC<OSListProps> = ({
               <div key={os.id} className="border border-border rounded-lg p-4 bg-card">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2 flex-1">
-                    <div className="flex items-center space-x-3">
-                      <span className="font-medium text-sm">OS #{os.id.slice(0, 8)}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(os.status)}`}>
-                        {os.status}
-                      </span>
+                    {/* Primeira linha: Informações do veículo */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-medium text-sm">OS #{os.id.slice(0, 8)}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(os.status)}`}>
+                          {os.status}
+                        </span>
+                      </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                    {/* Informações do veículo, tipo, placas e motorista */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
                       <div>
                         <span className="text-muted-foreground">Veículo: </span>
                         <span className="font-medium">
@@ -148,29 +183,41 @@ export const OSList: React.FC<OSListProps> = ({
                         </span>
                       </div>
                       <div>
+                        <span className="text-muted-foreground">Tipo: </span>
+                        <span>{os.tipoManutencao}</span>
+                      </div>
+                      <div>
                         <span className="text-muted-foreground">Placa(s): </span>
                         <span>{os.placaReferente}</span>
                       </div>
                       <div>
+                        <span className="text-muted-foreground">Motorista: </span>
+                        <span>{getMotorista(os.motoristaId)}</span>
+                      </div>
+                    </div>
+
+                    {/* Segunda linha: Datas */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                      <div>
                         <span className="text-muted-foreground">Abertura: </span>
-                        <span>{os.dataAbertura} {os.horaAbertura}</span>
+                        <span>{formatDate(os.dataAbertura)} {formatTime(os.horaAbertura)}</span>
                       </div>
+                      {os.dataFechamento && (
+                        <div>
+                          <span className="text-muted-foreground">Fechamento: </span>
+                          <span>{formatDate(os.dataFechamento)} {formatTime(os.horaFechamento)}</span>
+                        </div>
+                      )}
+                      {os.previsaoLiberacao && (
+                        <div>
+                          <span className="text-muted-foreground">Previsão: </span>
+                          <span>{formatDate(os.previsaoLiberacao)} {formatTime(os.horaPrevisaoLiberacao)}</span>
+                        </div>
+                      )}
                     </div>
-
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Tipo: </span>
-                      <span>{os.tipoManutencao}</span>
-                    </div>
-
-                    {os.dataFechamento && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Fechamento: </span>
-                        <span>{os.dataFechamento} {os.horaFechamento}</span>
-                      </div>
-                    )}
 
                     {os.descricaoServico && (
-                      <p className="text-sm text-muted-foreground">{os.descricaoServico}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{os.descricaoServico}</p>
                     )}
                   </div>
 

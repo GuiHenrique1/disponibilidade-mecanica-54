@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
+import { OrdemServico, CavaloMecanico, Composicao, Motorista } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { dataService } from '@/services/dataService';
 import { OSFormData, initialFormData } from '@/components/os/OSFormData';
@@ -10,7 +11,8 @@ export const useOSForm = (
   ordensServico: OrdemServico[],
   setOrdensServico: (os: OrdemServico[]) => void,
   cavalos: CavaloMecanico[],
-  composicoes: Composicao[]
+  composicoes: Composicao[],
+  motoristas: Motorista[]
 ) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOS, setEditingOS] = useState<OrdemServico | null>(null);
@@ -19,7 +21,17 @@ export const useOSForm = (
   const { toast } = useToast();
 
   const resetForm = () => {
-    setFormData(initialFormData);
+    // Definir o horário atual do sistema
+    const getCurrentLocalDateTime = () => {
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+      return localDateTime.toISOString().slice(0, 16);
+    };
+
+    setFormData({
+      ...initialFormData,
+      dataHoraAbertura: getCurrentLocalDateTime()
+    });
     setValidationError('');
   };
 
@@ -58,18 +70,23 @@ export const useOSForm = (
 
   const handleFinalize = (os: OrdemServico) => {
     const agora = new Date();
-    const dataHoraAtual = agora.toISOString().slice(0, 16);
+    const dataHoraAtual = new Date(agora.getTime() - (agora.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
     
     setEditingOS(os);
     const dataHoraAbertura = formatDateTimeForInput(os.dataAbertura, os.horaAbertura);
+    const dataHoraPrevisao = os.previsaoLiberacao && os.horaPrevisaoLiberacao 
+      ? formatDateTimeForInput(os.previsaoLiberacao, os.horaPrevisaoLiberacao) 
+      : '';
 
     setFormData({
       tipoVeiculo: os.tipoVeiculo,
       veiculoId: os.tipoVeiculo === 'frota' ? os.veiculoId : '',
       composicaoId: os.tipoVeiculo === 'composicao' ? os.veiculoId : '',
       placaReferente: os.placaReferente,
+      motoristaId: os.motoristaId || '',
       dataHoraAbertura,
       dataHoraFechamento: dataHoraAtual,
+      dataHoraPrevisaoLiberacao: dataHoraPrevisao,
       tipoManutencao: os.tipoManutencao,
       descricaoServico: os.descricaoServico,
       status: 'Concluída',
@@ -86,14 +103,19 @@ export const useOSForm = (
     const dataHoraFechamento = os.dataFechamento && os.horaFechamento 
       ? formatDateTimeForInput(os.dataFechamento, os.horaFechamento) 
       : '';
+    const dataHoraPrevisao = os.previsaoLiberacao && os.horaPrevisaoLiberacao 
+      ? formatDateTimeForInput(os.previsaoLiberacao, os.horaPrevisaoLiberacao) 
+      : '';
 
     setFormData({
       tipoVeiculo: os.tipoVeiculo,
       veiculoId: os.tipoVeiculo === 'frota' ? os.veiculoId : '',
       composicaoId: os.tipoVeiculo === 'composicao' ? os.veiculoId : '',
       placaReferente: os.placaReferente,
+      motoristaId: os.motoristaId || '',
       dataHoraAbertura,
       dataHoraFechamento,
+      dataHoraPrevisaoLiberacao: dataHoraPrevisao,
       tipoManutencao: os.tipoManutencao,
       descricaoServico: os.descricaoServico,
       status: os.status,
@@ -150,15 +172,21 @@ export const useOSForm = (
     const { date: dataFechamento, time: horaFechamento } = formData.dataHoraFechamento 
       ? formatDateTimeForStorage(formData.dataHoraFechamento) 
       : { date: '', time: '' };
+    const { date: previsaoLiberacao, time: horaPrevisaoLiberacao } = formData.dataHoraPrevisaoLiberacao 
+      ? formatDateTimeForStorage(formData.dataHoraPrevisaoLiberacao) 
+      : { date: '', time: '' };
 
     const osData: Omit<OrdemServico, 'id' | 'createdAt'> = {
       tipoVeiculo: formData.tipoVeiculo,
       veiculoId: selectedVehicleId,
       placaReferente: formData.placaReferente,
+      motoristaId: formData.motoristaId || undefined,
       dataAbertura,
       horaAbertura,
       dataFechamento: dataFechamento || undefined,
       horaFechamento: horaFechamento || undefined,
+      previsaoLiberacao: previsaoLiberacao || undefined,
+      horaPrevisaoLiberacao: horaPrevisaoLiberacao || undefined,
       tipoManutencao: formData.tipoManutencao,
       descricaoServico: formData.descricaoServico,
       status: formData.status
@@ -175,22 +203,15 @@ export const useOSForm = (
       } else {
         // Criar a OS principal
         const novaOS = dataService.addOrdemServico(osData);
-        console.log('OS criada:', novaOS);
-        console.log('Criar Stand-by:', formData.criarStandBy);
-        console.log('Cavalo Stand-by ID:', formData.cavaloStandById);
         
         // Verificar se deve criar OS Stand-by
         if (formData.criarStandBy && formData.cavaloStandById) {
-          console.log('Iniciando criação de OS Stand-by...');
-          
           const cavaloStandBy = cavalos.find(c => c.id === formData.cavaloStandById);
-          console.log('Cavalo para Stand-by encontrado:', cavaloStandBy);
           
           if (cavaloStandBy) {
             // Verificar se o cavalo já tem uma OS aberta antes de criar a stand-by
             const ordensAtual = dataService.getOrdensServico(); // Buscar dados atualizados
             const standByError = validateUniqueOS(ordensAtual, cavaloStandBy.id, 'frota', cavalos, composicoes);
-            console.log('Erro de validação Stand-by:', standByError);
             
             if (!standByError) {
               const composicao = composicoes.find(c => c.id === formData.composicaoId);
@@ -198,34 +219,33 @@ export const useOSForm = (
                 tipoVeiculo: 'frota',
                 veiculoId: cavaloStandBy.id,
                 placaReferente: cavaloStandBy.placa,
+                motoristaId: formData.motoristaId || undefined,
                 dataAbertura,
                 horaAbertura,
                 dataFechamento: dataFechamento || undefined,
                 horaFechamento: horaFechamento || undefined,
-                tipoManutencao: 'STAND-BY', // Definir automaticamente como STAND-BY
+                previsaoLiberacao: previsaoLiberacao || undefined,
+                horaPrevisaoLiberacao: horaPrevisaoLiberacao || undefined,
+                tipoManutencao: 'STAND-BY',
                 descricaoServico: `STAND-BY ${composicao?.identificador || ''} - ${formData.descricaoServico}`,
                 status: formData.status,
                 isStandBy: true,
                 composicaoOrigemId: formData.composicaoId
               };
               
-              console.log('Criando OS Stand-by com dados:', osStandBy);
-              const osStandByCriada = dataService.addOrdemServico(osStandBy);
-              console.log('OS Stand-by criada:', osStandByCriada);
+              dataService.addOrdemServico(osStandBy);
               
               toast({
                 title: "Sucesso",
                 description: "Ordem de serviço da composição e OS Stand-by do veículo criadas com sucesso."
               });
             } else {
-              console.log('Não foi possível criar Stand-by:', standByError);
               toast({
                 title: "Aviso",
                 description: `OS da composição criada, mas não foi possível criar a OS Stand-by: ${standByError}`
               });
             }
           } else {
-            console.log('Cavalo mecânico não encontrado para ID:', formData.cavaloStandById);
             toast({
               title: "Aviso",
               description: "OS da composição criada, mas não foi possível encontrar o cavalo mecânico para criar a OS Stand-by."

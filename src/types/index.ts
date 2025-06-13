@@ -26,10 +26,13 @@ export interface OrdemServico {
   tipoVeiculo: 'frota' | 'composicao';
   veiculoId: string; // ID do cavalo ou composição
   placaReferente: string; // Placa(s) do veículo/composição
+  motoristaId?: string; // ID do motorista responsável
   dataAbertura: string; // DD-MM-AAAA
   horaAbertura: string; // HH:MM
   dataFechamento?: string;
   horaFechamento?: string;
+  previsaoLiberacao?: string; // DD-MM-AAAA
+  horaPrevisaoLiberacao?: string; // HH:MM
   tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'SOS' | 'TERMAC' | 'ITR' | 'STAND-BY' | 'Outros';
   descricaoServico: string;
   status: 'Aberta' | 'Concluída' | 'Cancelada';

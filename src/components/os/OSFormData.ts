@@ -6,8 +6,10 @@ export interface OSFormData {
   veiculoId: string;
   composicaoId: string;
   placaReferente: string;
+  motoristaId: string;
   dataHoraAbertura: string;
   dataHoraFechamento: string;
+  dataHoraPrevisaoLiberacao: string;
   tipoManutencao: OrdemServico['tipoManutencao'] | '';
   descricaoServico: string;
   status: OrdemServico['status'] | '';
@@ -20,8 +22,10 @@ export const initialFormData: OSFormData = {
   veiculoId: '',
   composicaoId: '',
   placaReferente: '',
+  motoristaId: '',
   dataHoraAbertura: '',
   dataHoraFechamento: '',
+  dataHoraPrevisaoLiberacao: '',
   tipoManutencao: '',
   descricaoServico: '',
   status: '',

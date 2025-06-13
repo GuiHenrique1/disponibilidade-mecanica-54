@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,14 +6,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
+import { OrdemServico, CavaloMecanico, Composicao, Motorista } from '@/types';
 import { OSFormData } from './OSFormData';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 interface OSFormProps {
   formData: OSFormData;
   setFormData: (data: OSFormData) => void;
   cavalos: CavaloMecanico[];
   composicoes: Composicao[];
+  motoristas: Motorista[];
   editingOS: OrdemServico | null;
   onSubmit: () => void;
   onTipoVeiculoChange: (tipo: 'frota' | 'composicao') => void;
@@ -25,6 +28,7 @@ export const OSForm: React.FC<OSFormProps> = ({
   setFormData,
   cavalos,
   composicoes,
+  motoristas,
   editingOS,
   onSubmit,
   onTipoVeiculoChange,
@@ -36,14 +40,48 @@ export const OSForm: React.FC<OSFormProps> = ({
                               formData.composicaoId && 
                               !editingOS;
 
-  console.log('Exibir checkbox Stand-by:', showStandByCheckbox);
-  console.log('Tipo de veículo:', formData.tipoVeiculo);
-  console.log('Composição ID:', formData.composicaoId);
-  console.log('Editando OS:', !!editingOS);
-
   const handleCavaloStandByChange = (cavaloId: string) => {
     setFormData({...formData, cavaloStandById: cavaloId});
   };
+
+  // Função para obter o horário atual no fuso horário local
+  const getCurrentLocalDateTime = () => {
+    const now = new Date();
+    // Converter para o fuso horário local do sistema
+    const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+    return localDateTime.toISOString().slice(0, 16);
+  };
+
+  // Configurar horário padrão se não estiver definido
+  React.useEffect(() => {
+    if (!formData.dataHoraAbertura && !editingOS) {
+      setFormData({
+        ...formData,
+        dataHoraAbertura: getCurrentLocalDateTime()
+      });
+    }
+  }, []);
+
+  // Opções para busca de motoristas
+  const motoristaOptions = motoristas.map(motorista => ({
+    value: motorista.id,
+    label: motorista.nome,
+    searchText: motorista.nome
+  }));
+
+  // Opções para busca de cavalos
+  const cavaloOptions = cavalos.map(cavalo => ({
+    value: cavalo.id,
+    label: `${cavalo.nomeFreota} - ${cavalo.placa}`,
+    searchText: `${cavalo.nomeFreota} ${cavalo.placa}`
+  }));
+
+  // Opções para busca de composições
+  const composicaoOptions = composicoes.map(composicao => ({
+    value: composicao.id,
+    label: `${composicao.identificador} - ${composicao.primeiraComposicao} ${composicao.segundaComposicao}`,
+    searchText: `${composicao.identificador} ${composicao.primeiraComposicao} ${composicao.segundaComposicao}`
+  }));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -62,55 +100,37 @@ export const OSForm: React.FC<OSFormProps> = ({
 
       {formData.tipoVeiculo === 'frota' && (
         <div>
-          <Label htmlFor="veiculo">Nome da Frota *</Label>
-          <Select value={formData.veiculoId} onValueChange={onVeiculoChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a frota..." />
-            </SelectTrigger>
-            <SelectContent>
-              {cavalos.map(cavalo => (
-                <SelectItem key={cavalo.id} value={cavalo.id}>
-                  {cavalo.nomeFreota}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            label="Nome da Frota *"
+            options={cavaloOptions}
+            value={formData.veiculoId}
+            onValueChange={onVeiculoChange}
+            placeholder="Buscar frota..."
+          />
         </div>
       )}
 
       {formData.tipoVeiculo === 'composicao' && (
         <div>
-          <Label htmlFor="composicao">Composição *</Label>
-          <Select value={formData.composicaoId} onValueChange={onComposicaoChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a composição..." />
-            </SelectTrigger>
-            <SelectContent>
-              {composicoes.map(composicao => (
-                <SelectItem key={composicao.id} value={composicao.id}>
-                  {composicao.identificador}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            label="Composição *"
+            options={composicaoOptions}
+            value={formData.composicaoId}
+            onValueChange={onComposicaoChange}
+            placeholder="Buscar composição..."
+          />
         </div>
       )}
 
       {showStandByCheckbox && (
         <div className="md:col-span-2">
-          <Label htmlFor="cavaloStandBy">Cavalo Mecânico para Stand-by</Label>
-          <Select value={formData.cavaloStandById} onValueChange={handleCavaloStandByChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o cavalo para Stand-by..." />
-            </SelectTrigger>
-            <SelectContent>
-              {cavalos.map(cavalo => (
-                <SelectItem key={cavalo.id} value={cavalo.id}>
-                  {cavalo.nomeFreota} - {cavalo.placa}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            label="Cavalo Mecânico para Stand-by"
+            options={cavaloOptions}
+            value={formData.cavaloStandById}
+            onValueChange={handleCavaloStandByChange}
+            placeholder="Buscar cavalo para Stand-by..."
+          />
         </div>
       )}
 
@@ -125,13 +145,22 @@ export const OSForm: React.FC<OSFormProps> = ({
         />
       </div>
 
+      <div className="md:col-span-2">
+        <SearchableSelect
+          label="Motorista Responsável"
+          options={motoristaOptions}
+          value={formData.motoristaId}
+          onValueChange={(value) => setFormData({...formData, motoristaId: value})}
+          placeholder="Buscar motorista..."
+        />
+      </div>
+
       {showStandByCheckbox && (
         <div className="md:col-span-2 flex items-center space-x-2 p-3 border rounded-md bg-blue-50">
           <Checkbox
             id="criarStandBy"
             checked={formData.criarStandBy}
             onCheckedChange={(checked) => {
-              console.log('Checkbox alterado para:', checked);
               setFormData({...formData, criarStandBy: checked as boolean});
             }}
           />
@@ -148,6 +177,16 @@ export const OSForm: React.FC<OSFormProps> = ({
           type="datetime-local"
           value={formData.dataHoraAbertura}
           onChange={(e) => setFormData({...formData, dataHoraAbertura: e.target.value})}
+        />
+      </div>
+
+      <div className="md:col-span-2">
+        <Label htmlFor="dataHoraPrevisaoLiberacao">Previsão de Liberação</Label>
+        <Input
+          id="dataHoraPrevisaoLiberacao"
+          type="datetime-local"
+          value={formData.dataHoraPrevisaoLiberacao}
+          onChange={(e) => setFormData({...formData, dataHoraPrevisaoLiberacao: e.target.value})}
         />
       </div>
 

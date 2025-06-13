@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
+import { OrdemServico, CavaloMecanico, Composicao, Motorista } from '@/types';
 import { OSForm } from './OSForm';
 import { OSFormData } from './OSFormData';
 
@@ -15,6 +15,7 @@ interface OSDialogProps {
   setFormData: (data: OSFormData) => void;
   cavalos: CavaloMecanico[];
   composicoes: Composicao[];
+  motoristas: Motorista[];
   validationError: string;
   onSubmit: () => void;
   onTipoVeiculoChange: (tipo: 'frota' | 'composicao') => void;
@@ -32,6 +33,7 @@ export const OSDialog: React.FC<OSDialogProps> = ({
   setFormData,
   cavalos,
   composicoes,
+  motoristas,
   validationError,
   onSubmit,
   onTipoVeiculoChange,
@@ -72,6 +74,7 @@ export const OSDialog: React.FC<OSDialogProps> = ({
           setFormData={setFormData}
           cavalos={cavalos}
           composicoes={composicoes}
+          motoristas={motoristas}
           editingOS={editingOS}
           onSubmit={onSubmit}
           onTipoVeiculoChange={onTipoVeiculoChange}

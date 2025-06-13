@@ -7,7 +7,16 @@ import { OSDialog } from './os/OSDialog';
 import { OSList } from './os/OSList';
 
 export const OrdensServico: React.FC = () => {
-  const { ordensServico, cavalos, composicoes, addOrdemServico, updateOrdemServico, deleteOrdemServico } = useAppData();
+  const { 
+    ordensServico, 
+    cavalos, 
+    composicoes, 
+    motoristas,
+    addOrdemServico, 
+    updateOrdemServico, 
+    deleteOrdemServico,
+    refreshData 
+  } = useAppData();
 
   const {
     isDialogOpen,
@@ -28,7 +37,13 @@ export const OrdensServico: React.FC = () => {
   } = useOSForm(ordensServico, (updatedOS: OrdemServico[]) => {
     // Esta função não é mais necessária pois o context gerencia o estado
     // Mantemos para compatibilidade com o hook existente
-  }, cavalos, composicoes);
+  }, cavalos, composicoes, motoristas);
+
+  const handleRefresh = () => {
+    if (refreshData) {
+      refreshData();
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -43,6 +58,7 @@ export const OrdensServico: React.FC = () => {
           setFormData={setFormData}
           cavalos={cavalos}
           composicoes={composicoes}
+          motoristas={motoristas}
           validationError={validationError}
           onSubmit={handleSubmit}
           onTipoVeiculoChange={handleTipoVeiculoChange}
@@ -57,9 +73,11 @@ export const OrdensServico: React.FC = () => {
         ordensServico={ordensServico}
         cavalos={cavalos}
         composicoes={composicoes}
+        motoristas={motoristas}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onFinalize={handleFinalize}
+        onRefresh={handleRefresh}
       />
     </div>
   );
