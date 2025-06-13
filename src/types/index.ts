@@ -53,6 +53,8 @@ export interface DadosDisponibilidade {
   disponibilidadePorHora: DisponibilidadeHora[];
   mediaDisponibilidade: number;
   mediaVeiculosDisponiveis: number;
+  isTempoReal?: boolean;
+  horaAtual?: number;
 }
 
 // Interfaces para relatórios e estatísticas
