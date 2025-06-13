@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from 'recharts';
 import { DadosDisponibilidade } from '@/types';
@@ -27,22 +26,26 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
 
   const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
 
-  // Dados para o gráfico de barras - sempre 24 horas, mas com valores null para horas futuras
-  const barData = dados.disponibilidadePorHora.map(hora => ({
-    hora: `${hora.hora}h`,
-    horaNumero: hora.hora,
-    disponiveis: hora.totalDisponiveis, // null para horas futuras
-    meta: metaValue,
-    acimaMeta: hora.totalDisponiveis !== null ? hora.totalDisponiveis >= metaValue : false,
-    isHoraFutura: hora.isHoraFutura || false
-  }));
+  // Dados para o gráfico de barras - sempre 24 horas
+  const barData = Array.from({ length: 24 }, (_, index) => {
+    const horaData = dados.disponibilidadePorHora.find(h => h.hora === index);
+    return {
+      hora: `${index}h`,
+      horaNumero: index,
+      disponiveis: horaData?.totalDisponiveis || 0, // 0 for future hours
+      meta: metaValue,
+      acimaMeta: horaData?.totalDisponiveis !== null ? (horaData.totalDisponiveis >= metaValue) : false,
+      isHoraFutura: horaData?.isHoraFutura || false,
+      temDados: horaData?.totalDisponiveis !== null // Flag to check if we have real data
+    };
+  });
 
   const CustomTooltip = ({ active, payload, label, ...props }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       
-      // Se for hora futura, mostrar tooltip diferente
-      if (data.isHoraFutura || data.disponiveis === null) {
+      // Se for hora futura ou sem dados, mostrar tooltip diferente
+      if (data.isHoraFutura || !data.temDados) {
         return (
           <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
             <p className="text-sm font-medium">{`${label}`}</p>
@@ -76,8 +79,8 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
   const renderBarLabel = (props: any) => {
     const { x, y, width, value, payload } = props;
     
-    // Não renderizar label para horas futuras ou valores null
-    if (payload.isHoraFutura || value === null) {
+    // Verificar se payload existe e se não é hora futura ou sem dados
+    if (!payload || payload.isHoraFutura || !payload.temDados || value === 0) {
       return null;
     }
     
@@ -95,18 +98,6 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     );
   };
 
-  // Custom Bar para renderizar apenas horas passadas
-  const CustomBar = (props: any) => {
-    const { payload, ...rest } = props;
-    
-    // Se for hora futura, não renderizar a barra
-    if (payload.isHoraFutura || payload.disponiveis === null) {
-      return null;
-    }
-    
-    return <Bar {...rest} />;
-  };
-
   const tipoVeiculoTexto = tipoVeiculo === 'cavalos' ? 'Cavalos Mecânicos' : 'Composições';
 
   // Informação sobre tempo real
@@ -121,14 +112,14 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       {/* Gráfico de Rosca - Menor */}
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-center">Disponibilidade Mecânica</h3>
-        <ResponsiveContainer width="100%" height={140}>
+        <ResponsiveContainer width="100%" height={120}>
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={25}
-              outerRadius={50}
+              innerRadius={20}
+              outerRadius={45}
               paddingAngle={2}
               dataKey="value"
               labelLine={false}
@@ -142,11 +133,11 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           </PieChart>
         </ResponsiveContainer>
         <div className="text-center mt-2">
-          <p className="text-2xl font-bold">{dados.mediaDisponibilidade.toFixed(1)}%</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-2xl font-bold text-center">{dados.mediaDisponibilidade.toFixed(1)}%</p>
+          <p className="text-sm text-muted-foreground text-center">
             Meta: {metaDisponibilidade}%
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground text-center">
             {Math.round(dados.mediaVeiculosDisponiveis)} veículos em média
           </p>
         </div>
@@ -175,7 +166,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               <LabelList content={renderBarLabel} />
               {barData.map((entry, index) => {
                 // Só colorir barras que têm dados (não futuras)
-                if (entry.isHoraFutura || entry.disponiveis === null) {
+                if (entry.isHoraFutura || !entry.temDados) {
                   return <Cell key={`cell-${index}`} fill="transparent" />;
                 }
                 return (
