@@ -93,7 +93,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         fontSize="12"
         fontWeight="500"
       >
-        {Math.round(value)}
+        {value}
       </text>
     );
   };
