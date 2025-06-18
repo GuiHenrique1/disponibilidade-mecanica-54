@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { CavaloMecanico, Composicao, Motorista, OrdemServico } from '@/types';
 import { crudService } from '@/services/crudService';
 import { useToast } from '@/hooks/use-toast';
@@ -68,24 +67,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const { toast } = useToast();
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     try {
+      console.log('AppContext - Atualizando dados...');
       setCavalos(crudService.getCavalos());
       setComposicoes(crudService.getComposicoes());
       setMotoristas(crudService.getMotoristas());
       setOrdensServico(crudService.getOrdensServico());
+      console.log('AppContext - Dados atualizados com sucesso');
     } catch (error) {
+      console.error('AppContext - Erro ao atualizar dados:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados do sistema",
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
+  // Carregar dados iniciais
   useEffect(() => {
     refreshData();
-  }, []);
+  }, [refreshData]);
+
+  // Auto-refresh a cada 5 segundos para manter dados sempre atualizados
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshData();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [refreshData]);
 
   // Generic error handler
   const handleOperation = async <T,>(
@@ -97,7 +109,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setLoading(prev => ({ ...prev, [loadingKey]: true }));
       operation();
-      refreshData();
+      // Forçar atualização imediata após operação
+      setTimeout(() => {
+        refreshData();
+      }, 100);
       toast({
         title: "Sucesso",
         description: successMessage

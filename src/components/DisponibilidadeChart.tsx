@@ -29,10 +29,14 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
   // Dados para o gráfico de barras - sempre 24 horas
   const barData = Array.from({ length: 24 }, (_, index) => {
     const horaData = dados.disponibilidadePorHora.find(h => h.hora === index);
+    const totalDisponiveis = horaData?.totalDisponiveis || 0;
+    const totalParados = horaData?.totalIndisponiveis || 0;
+    
     return {
       hora: `${index}h`,
       horaNumero: index,
-      disponiveis: horaData?.totalDisponiveis || 0, // 0 for future hours
+      disponiveis: totalDisponiveis,
+      parados: totalParados,
       meta: metaValue,
       acimaMeta: horaData?.totalDisponiveis !== null ? (horaData.totalDisponiveis >= metaValue) : false,
       isHoraFutura: horaData?.isHoraFutura || false,
@@ -47,7 +51,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       // Se for hora futura ou sem dados, mostrar tooltip diferente
       if (data.isHoraFutura || !data.temDados) {
         return (
-          <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
+          <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
             <p className="text-sm font-medium">{`${label}`}</p>
             <p className="text-sm text-muted-foreground">
               Horário ainda não alcançado
@@ -57,10 +61,13 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       }
 
       return (
-        <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
           <p className="text-sm font-medium">{`${label}`}</p>
           <p className="text-sm text-blue-600">
-            {`Disponíveis: ${Math.round(payload[0].value)} veículos`}
+            {`Disponíveis: ${data.disponiveis} veículos`}
+          </p>
+          <p className="text-sm text-red-600">
+            {`Parados: ${data.parados} veículos`}
           </p>
           <p className="text-sm text-gray-600">
             {`Meta: ${metaValue} veículos`}
@@ -141,7 +148,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
             Meta: {metaDisponibilidade}%
           </p>
           <p className="text-xs text-muted-foreground text-center">
-            {Math.round(dados.mediaVeiculosDisponiveis)} veículos em média
+            {Math.round(dados.mediaVeiculosDisponiveis)} disponíveis
           </p>
           <p className="text-xs text-red-600 text-center mt-1">
             {Math.round(mediaVeiculosParados)} parados
@@ -156,7 +163,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           {tempoRealInfo}
         </h3>
         <ResponsiveContainer width="100%" height={450}>
-          <BarChart data={barData} margin={{ top: 30, right: 50, left: 20, bottom: 5 }}>
+          <BarChart data={barData} margin={{ top: 30, right: 80, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey="hora" 

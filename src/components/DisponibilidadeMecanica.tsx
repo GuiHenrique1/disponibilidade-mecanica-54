@@ -4,16 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CavaloMecanico, Composicao, OrdemServico } from '@/types';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { calcularDisponibilidade } from '@/utils/disponibilidadeCalculator';
 import { DisponibilidadeChart } from './DisponibilidadeChart';
 import { DisponibilidadeTable } from './DisponibilidadeTable';
+import { useAppData } from '@/hooks/useAppData';
 
 export const DisponibilidadeMecanica: React.FC = () => {
-  const [cavalos] = useLocalStorage<CavaloMecanico[]>('cavalos-mecanicos', []);
-  const [composicoes] = useLocalStorage<Composicao[]>('composicoes', []);
-  const [ordensServico] = useLocalStorage<OrdemServico[]>('ordens-servico', []);
+  const { cavalos, composicoes, ordensServico } = useAppData();
   
   const [dataAnalise, setDataAnalise] = useState(() => {
     // Usar fuso horário local para definir data inicial
