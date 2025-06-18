@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,10 +65,6 @@ export const DisponibilidadeMecanica: React.FC = () => {
       'composicao'
     );
   }, [composicoes.length, ordensServico, dataAnaliseFormatada]);
-
-  // Calcular totais de veículos parados
-  const cavalosMedioParados = dadosCavalos.totalFrota - dadosCavalos.mediaVeiculosDisponiveis;
-  const composicoesMedioParadas = dadosComposicoes.totalFrota - dadosComposicoes.mediaVeiculosDisponiveis;
 
   // Data e hora atual para exibição (fuso horário local)
   const dataHoraAtual = new Date().toLocaleDateString('pt-BR', {
@@ -159,7 +154,6 @@ export const DisponibilidadeMecanica: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-center">{dadosCavalos.mediaVeiculosDisponiveis.toFixed(1)}</div>
-                <div className="text-sm text-red-600 text-center mt-1">{cavalosMedioParados.toFixed(1)} parados</div>
               </CardContent>
             </Card>
             <Card>
@@ -237,7 +231,6 @@ export const DisponibilidadeMecanica: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-center">{dadosComposicoes.mediaVeiculosDisponiveis.toFixed(1)}</div>
-                <div className="text-sm text-red-600 text-center mt-1">{composicoesMedioParadas.toFixed(1)} paradas</div>
               </CardContent>
             </Card>
             <Card>

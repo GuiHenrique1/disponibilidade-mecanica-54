@@ -82,11 +82,11 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return `${value.toFixed(1)}%`;
   };
 
-  // Função para renderizar valores acima das barras apenas para horas passadas
-  const renderBarLabel = (props: any) => {
-    const { x, y, width, value, payload } = props;
+  // Função customizada para renderizar valores acima das barras
+  const CustomLabel = (props: any) => {
+    const { x, y, width, height, payload } = props;
     
-    // Só mostrar se payload existe e tem dados reais (não é hora futura)
+    // Só mostrar se tem dados reais (não é hora futura)
     if (!payload || payload.isHoraFutura || !payload.temDados) {
       return null;
     }
@@ -94,11 +94,11 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return (
       <text 
         x={x + width / 2} 
-        y={y - 5} 
+        y={y - 8} 
         fill="#374151" 
         textAnchor="middle" 
         fontSize="12"
-        fontWeight="500"
+        fontWeight="600"
       >
         {payload.disponiveis}
       </text>
@@ -113,9 +113,6 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       (até {dados.horaAtual}h - tempo real)
     </span>
   ) : null;
-
-  // Calcular total de frotas paradas (média)
-  const mediaVeiculosParados = dados.totalFrota - dados.mediaVeiculosDisponiveis;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -150,9 +147,6 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           <p className="text-xs text-muted-foreground text-center">
             {Math.round(dados.mediaVeiculosDisponiveis)} disponíveis
           </p>
-          <p className="text-xs text-red-600 text-center mt-1">
-            {Math.round(mediaVeiculosParados)} parados
-          </p>
         </div>
       </div>
 
@@ -163,7 +157,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           {tempoRealInfo}
         </h3>
         <ResponsiveContainer width="100%" height={450}>
-          <BarChart data={barData} margin={{ top: 30, right: 80, left: 20, bottom: 5 }}>
+          <BarChart data={barData} margin={{ top: 40, right: 100, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey="hora" 
@@ -175,8 +169,8 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
             />
             <YAxis fontSize={12} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="disponiveis" radius={[4, 4, 0, 0]} style={{ zIndex: 2 }}>
-              <LabelList content={renderBarLabel} />
+            <Bar dataKey="disponiveis" radius={[4, 4, 0, 0]}>
+              <LabelList content={CustomLabel} />
               {barData.map((entry, index) => {
                 // Só colorir barras que têm dados (não futuras)
                 if (entry.isHoraFutura || !entry.temDados) {
@@ -192,7 +186,6 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               stroke="#ef4444" 
               strokeWidth={4}
               strokeDasharray="none"
-              style={{ zIndex: 10 }}
               label={{ 
                 value: `Meta: ${metaValue}`, 
                 position: "right",
