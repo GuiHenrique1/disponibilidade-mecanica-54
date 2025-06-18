@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OrdemServico, CavaloMecanico, Composicao, Motorista } from '@/types';
-import { Edit, Trash2, CheckCircle, Search, RefreshCw } from 'lucide-react';
+import { Edit, Trash2, CheckCircle, Search } from 'lucide-react';
 import { getStatusColor } from './OSFormUtils';
 import { useOSFilters } from '@/hooks/useOSFilters';
 
@@ -77,15 +77,6 @@ export const OSList: React.FC<OSListProps> = ({
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Ordens de Serviço Abertas ({openOrdersCount})</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            className="ml-2"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
         </div>
         
         {/* Filtros e Pesquisa */}

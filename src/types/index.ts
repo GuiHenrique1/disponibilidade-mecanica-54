@@ -1,3 +1,4 @@
+
 export interface CavaloMecanico {
   id: string;
   nomeFreota: string; // Nome da frota (ex: T2506)
@@ -32,7 +33,7 @@ export interface OrdemServico {
   horaFechamento?: string;
   previsaoLiberacao?: string; // DD-MM-AAAA
   horaPrevisaoLiberacao?: string; // HH:MM
-  tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'SOS' | 'TERMAC' | 'ITR' | 'STAND-BY' | 'Outros';
+  tipoManutencao: 'Preventiva' | 'Corretiva' | 'Pneu' | 'Elétrica' | 'SOS' | 'TERMAC' | 'ITR' | 'STAND-BY' | 'MANUTENÇÃO EXTERNA' | 'Outros';
   descricaoServico: string;
   status: 'Aberta' | 'Concluída' | 'Cancelada';
   isStandBy?: boolean; // Indica se é uma OS stand-by

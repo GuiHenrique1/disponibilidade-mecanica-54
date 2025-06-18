@@ -107,6 +107,9 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     </span>
   ) : null;
 
+  // Calcular total de frotas paradas (média)
+  const mediaVeiculosParados = dados.totalFrota - dados.mediaVeiculosDisponiveis;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Gráfico de Rosca - Menor */}
@@ -140,6 +143,9 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           <p className="text-xs text-muted-foreground text-center">
             {Math.round(dados.mediaVeiculosDisponiveis)} veículos em média
           </p>
+          <p className="text-xs text-red-600 text-center mt-1">
+            {Math.round(mediaVeiculosParados)} parados
+          </p>
         </div>
       </div>
 
@@ -150,7 +156,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           {tempoRealInfo}
         </h3>
         <ResponsiveContainer width="100%" height={450}>
-          <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={barData} margin={{ top: 30, right: 50, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey="hora" 

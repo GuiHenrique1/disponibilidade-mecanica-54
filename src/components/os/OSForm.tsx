@@ -220,6 +220,7 @@ export const OSForm: React.FC<OSFormProps> = ({
             <SelectItem value="TERMAC">TERMAC</SelectItem>
             <SelectItem value="ITR">ITR</SelectItem>
             <SelectItem value="STAND-BY">STAND-BY</SelectItem>
+            <SelectItem value="MANUTENÇÃO EXTERNA">MANUTENÇÃO EXTERNA</SelectItem>
             <SelectItem value="Outros">OUTROS</SelectItem>
           </SelectContent>
         </Select>
@@ -239,7 +240,6 @@ export const OSForm: React.FC<OSFormProps> = ({
           <SelectContent>
             <SelectItem value="Aberta">ABERTA</SelectItem>
             <SelectItem value="Concluída">CONCLUÍDA</SelectItem>
-            <SelectItem value="Cancelada">CANCELADA</SelectItem>
           </SelectContent>
         </Select>
       </div>

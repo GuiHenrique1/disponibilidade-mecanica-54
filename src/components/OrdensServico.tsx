@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { OrdemServico, CavaloMecanico, Composicao } from '@/types';
 import { useAppData } from '@/hooks/useAppData';
@@ -47,16 +46,9 @@ export const OrdensServico: React.FC = () => {
     // Mantemos para compatibilidade com o hook existente
   }, cavalos, composicoes, motoristas);
 
+  // Função vazia para compatibilidade - o sistema está sempre atualizado
   const handleRefresh = async () => {
-    try {
-      if (refreshData) {
-        console.log('Atualizando dados...');
-        await refreshData();
-        console.log('Dados atualizados com sucesso');
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar dados:', error);
-    }
+    // Sistema sempre atualizado - não necessário botão de refresh
   };
 
   return (
