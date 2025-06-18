@@ -16,6 +16,10 @@ export const validateCavalo = (cavalo: Partial<CavaloMecanico>): void => {
   if (cavalo.placa.trim().length < 3) {
     throw new ValidationError('Placa deve ter pelo menos 3 caracteres');
   }
+
+  if (!cavalo.nomeFreota || cavalo.nomeFreota.trim().length === 0) {
+    throw new ValidationError('Nome da frota é obrigatório');
+  }
 };
 
 export const validateComposicao = (composicao: Partial<Composicao>): void => {
@@ -29,6 +33,14 @@ export const validateComposicao = (composicao: Partial<Composicao>): void => {
 
   if (composicao.placas.some(placa => !placa || placa.trim().length === 0)) {
     throw new ValidationError('Todas as placas devem ser válidas');
+  }
+
+  if (!composicao.primeiraComposicao || composicao.primeiraComposicao.trim().length === 0) {
+    throw new ValidationError('Primeira composição é obrigatória');
+  }
+
+  if (!composicao.segundaComposicao || composicao.segundaComposicao.trim().length === 0) {
+    throw new ValidationError('Segunda composição é obrigatória');
   }
 };
 
@@ -47,7 +59,8 @@ export const validateOrdemServico = (os: Partial<OrdemServico>): void => {
     throw new ValidationError('Veículo é obrigatório');
   }
 
-  if (!os.tipoVeiculo || !['cavalo', 'composicao'].includes(os.tipoVeiculo)) {
+  // Corrigido: usar os tipos corretos de veículo
+  if (!os.tipoVeiculo || !['frota', 'composicao'].includes(os.tipoVeiculo)) {
     throw new ValidationError('Tipo de veículo inválido');
   }
 
@@ -59,11 +72,13 @@ export const validateOrdemServico = (os: Partial<OrdemServico>): void => {
     throw new ValidationError('Hora de abertura inválida');
   }
 
-  if (!os.tipoManutencao || !['Preventiva', 'Corretiva', 'Pneu', 'Elétrica', 'Outros'].includes(os.tipoManutencao)) {
+  // Corrigido: usar os tipos corretos de manutenção
+  if (!os.tipoManutencao || !['Preventiva', 'Corretiva', 'Pneu', 'Elétrica', 'SOS', 'TERMAC', 'ITR', 'STAND-BY', 'Outros'].includes(os.tipoManutencao)) {
     throw new ValidationError('Tipo de manutenção inválido');
   }
 
-  if (!os.status || !['Aberta', 'Em Andamento', 'Aguardando Peça', 'Concluída', 'Cancelada'].includes(os.status)) {
+  // Corrigido: usar os status corretos
+  if (!os.status || !['Aberta', 'Concluída', 'Cancelada'].includes(os.status)) {
     throw new ValidationError('Status inválido');
   }
 

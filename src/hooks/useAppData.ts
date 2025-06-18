@@ -8,5 +8,22 @@ export const useAppData = () => {
     throw new Error('useAppData deve ser usado dentro de um AppProvider');
   }
   
-  return context;
+  const { refreshData: originalRefreshData, ...rest } = context;
+  
+  // Adicionar tratamento de erro para refresh
+  const refreshData = async () => {
+    try {
+      if (originalRefreshData) {
+        await originalRefreshData();
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+      // Aqui poderíamos adicionar um toast de erro se necessário
+    }
+  };
+  
+  return {
+    ...rest,
+    refreshData
+  };
 };

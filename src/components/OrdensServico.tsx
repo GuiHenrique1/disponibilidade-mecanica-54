@@ -18,6 +18,14 @@ export const OrdensServico: React.FC = () => {
     refreshData 
   } = useAppData();
 
+  // Log para debug
+  console.log('OrdensServico - Dados carregados:', {
+    ordensServico: ordensServico.length,
+    cavalos: cavalos.length,
+    composicoes: composicoes.length,
+    motoristas: motoristas.length
+  });
+
   const {
     isDialogOpen,
     setIsDialogOpen,
@@ -39,9 +47,15 @@ export const OrdensServico: React.FC = () => {
     // Mantemos para compatibilidade com o hook existente
   }, cavalos, composicoes, motoristas);
 
-  const handleRefresh = () => {
-    if (refreshData) {
-      refreshData();
+  const handleRefresh = async () => {
+    try {
+      if (refreshData) {
+        console.log('Atualizando dados...');
+        await refreshData();
+        console.log('Dados atualizados com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
     }
   };
 
