@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { DadosDisponibilidade } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -85,36 +85,29 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return `${value.toFixed(1)}%`;
   };
 
-  // Função customizada para renderizar valores acima das barras - corrigida para garantir visibilidade
-  const CustomLabel = (props: any) => {
-    const { x, y, width, height, payload } = props;
+  // Função para renderizar rótulos customizados acima das barras
+  const renderCustomizedLabel = (props: any) => {
+    const { x, y, width, payload } = props;
     
-    if (!payload) {
-      return null;
-    }
+    if (!payload) return null;
     
-    // Configurações responsivas melhoradas
-    const fontSize = isMobile ? 11 : 13;
-    const yOffset = isMobile ? 18 : 15;
-    const fontWeight = "bold";
-    
-    // Para horas futuras ou sem dados, mostrar 0
+    // Determinar o valor a ser exibido
     const displayValue = payload.isHoraFutura || !payload.temDados ? '0' : payload.disponiveis;
+    
+    // Configurações responsivas
+    const fontSize = isMobile ? 10 : 12;
+    const yOffset = isMobile ? 8 : 10;
     const textColor = payload.isHoraFutura || !payload.temDados ? '#9ca3af' : '#1f2937';
     
     return (
       <text 
         x={x + width / 2} 
-        y={Math.max(y - yOffset, 20)} // Garantir que não fique fora da área visível
+        y={y - yOffset}
         fill={textColor}
         textAnchor="middle" 
         fontSize={fontSize}
-        fontWeight={fontWeight}
-        dominantBaseline="middle"
-        style={{ 
-          userSelect: 'none',
-          pointerEvents: 'none'
-        }}
+        fontWeight="bold"
+        dominantBaseline="central"
       >
         {displayValue}
       </text>
@@ -176,7 +169,7 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           <BarChart 
             data={barData} 
             margin={{ 
-              top: isMobile ? 60 : 50, 
+              top: isMobile ? 40 : 50, 
               right: isMobile ? 15 : 100, 
               left: isMobile ? 5 : 20, 
               bottom: isMobile ? 90 : 5 
@@ -201,11 +194,8 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               dataKey="disponiveis" 
               radius={[4, 4, 0, 0]}
               maxBarSize={isMobile ? 20 : 40}
+              label={renderCustomizedLabel}
             >
-              <LabelList 
-                content={CustomLabel}
-                position="top"
-              />
               {barData.map((entry, index) => {
                 // Colorir todas as barras, incluindo futuras (transparente para futuras)
                 if (entry.isHoraFutura || !entry.temDados) {
