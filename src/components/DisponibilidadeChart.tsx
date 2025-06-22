@@ -2,6 +2,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, LabelList } from 'recharts';
 import { DadosDisponibilidade } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DisponibilidadeChartProps {
   dados: DadosDisponibilidade;
@@ -10,6 +11,8 @@ interface DisponibilidadeChartProps {
 }
 
 export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dados, metaDisponibilidade, tipoVeiculo }) => {
+  const isMobile = useIsMobile();
+
   // Dados para o gráfico de rosca
   const pieData = [
     { 
@@ -82,25 +85,34 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return `${value.toFixed(1)}%`;
   };
 
-  // Função customizada para renderizar valores acima das barras
+  // Função customizada para renderizar valores acima das barras - melhorada para mobile
   const CustomLabel = (props: any) => {
     const { x, y, width, height, payload } = props;
     
-    // Só mostrar se tem dados reais (não é hora futura)
-    if (!payload || payload.isHoraFutura || !payload.temDados) {
+    // Sempre mostrar o valor, mesmo para horas futuras, mas com estilo diferente
+    if (!payload) {
       return null;
     }
+    
+    // Ajustar posicionamento e fonte baseado no dispositivo
+    const fontSize = isMobile ? 10 : 12;
+    const yOffset = isMobile ? 12 : 8;
+    
+    // Para horas futuras, mostrar 0 ou valor vazio
+    const displayValue = payload.isHoraFutura || !payload.temDados ? '0' : payload.disponiveis;
+    const textColor = payload.isHoraFutura || !payload.temDados ? '#9ca3af' : '#374151';
     
     return (
       <text 
         x={x + width / 2} 
-        y={y - 8} 
-        fill="#374151" 
+        y={y - yOffset} 
+        fill={textColor}
         textAnchor="middle" 
-        fontSize="12"
+        fontSize={fontSize}
         fontWeight="600"
+        dominantBaseline="middle"
       >
-        {payload.disponiveis}
+        {displayValue}
       </text>
     );
   };
@@ -157,24 +169,32 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
           {tempoRealInfo}
         </h3>
         <ResponsiveContainer width="100%" height={450}>
-          <BarChart data={barData} margin={{ top: 40, right: 100, left: 20, bottom: 5 }}>
+          <BarChart 
+            data={barData} 
+            margin={{ 
+              top: isMobile ? 50 : 40, 
+              right: isMobile ? 20 : 100, 
+              left: isMobile ? 10 : 20, 
+              bottom: isMobile ? 80 : 5 
+            }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey="hora" 
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               interval={0}
-              angle={-45}
+              angle={isMobile ? -90 : -45}
               textAnchor="end"
-              height={60}
+              height={isMobile ? 80 : 60}
             />
-            <YAxis fontSize={12} />
+            <YAxis fontSize={isMobile ? 10 : 12} />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="disponiveis" radius={[4, 4, 0, 0]}>
               <LabelList content={CustomLabel} />
               {barData.map((entry, index) => {
-                // Só colorir barras que têm dados (não futuras)
+                // Colorir todas as barras, incluindo futuras (transparente para futuras)
                 if (entry.isHoraFutura || !entry.temDados) {
-                  return <Cell key={`cell-${index}`} fill="transparent" />;
+                  return <Cell key={`cell-${index}`} fill="#e5e7eb" opacity={0.3} />;
                 }
                 return (
                   <Cell key={`cell-${index}`} fill={entry.acimaMeta ? '#10b981' : '#ef4444'} />
@@ -184,13 +204,13 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
             <ReferenceLine 
               y={metaValue} 
               stroke="#ef4444" 
-              strokeWidth={4}
+              strokeWidth={isMobile ? 2 : 4}
               strokeDasharray="none"
               label={{ 
                 value: `Meta: ${metaValue}`, 
-                position: "right",
+                position: isMobile ? "top" : "right",
                 fill: "#ef4444",
-                fontSize: 12,
+                fontSize: isMobile ? 10 : 12,
                 fontWeight: "bold"
               }}
             />
