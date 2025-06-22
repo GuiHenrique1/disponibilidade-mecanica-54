@@ -1,6 +1,9 @@
 
 import React from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine, LabelList
+} from 'recharts';
 import { DadosDisponibilidade } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -10,26 +13,47 @@ interface DisponibilidadeChartProps {
   tipoVeiculo: 'cavalos' | 'composicoes';
 }
 
-export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dados, metaDisponibilidade, tipoVeiculo }) => {
+// Custom Label para valores acima das barras – sempre visível
+const CustomLabel = (props: any) => {
+  const { x, y, width, value } = props;
+  if (value === null || value === undefined) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 8}
+      fill="#374151"
+      textAnchor="middle"
+      fontSize="13"
+      fontWeight="bold"
+      style={{ pointerEvents: 'none' }}
+    >
+      {value}
+    </text>
+  );
+};
+
+export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({
+  dados,
+  metaDisponibilidade,
+  tipoVeiculo,
+}) => {
   const isMobile = useIsMobile();
 
-  // Dados para o gráfico de rosca
   const pieData = [
-    { 
-      name: 'Real', 
+    {
+      name: 'Real',
       value: dados.mediaDisponibilidade,
-      color: dados.mediaDisponibilidade >= metaDisponibilidade ? '#10b981' : '#ef4444'
+      color: dados.mediaDisponibilidade >= metaDisponibilidade ? '#10b981' : '#ef4444',
     },
-    { 
-      name: 'Diferença', 
+    {
+      name: 'Diferença',
       value: 100 - dados.mediaDisponibilidade,
-      color: '#e5e7eb'
-    }
+      color: '#e5e7eb',
+    },
   ];
 
   const metaValue = Math.round((metaDisponibilidade / 100) * dados.totalFrota);
 
-  // Dados para o gráfico de barras - sempre 24 horas
   const barData = Array.from({ length: 24 }, (_, index) => {
     const horaData = dados.disponibilidadePorHora.find(h => h.hora === index);
     const totalDisponiveis = horaData?.totalDisponiveis || 0;
@@ -43,11 +67,18 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
       meta: metaValue,
       acimaMeta: horaData?.totalDisponiveis !== null ? (horaData.totalDisponiveis >= metaValue) : false,
       isHoraFutura: horaData?.isHoraFutura || false,
-      temDados: horaData?.totalDisponiveis !== null // Flag to check if we have real data
+      temDados: horaData?.totalDisponiveis !== null
     };
   });
 
-  const CustomTooltip = ({ active, payload, label, ...props }: any) => {
+  const tipoVeiculoTexto = tipoVeiculo === 'cavalos' ? 'Cavalos Mecânicos' : 'Composições';
+  const tempoRealInfo = dados.isTempoReal ? (
+    <span className="text-xs text-muted-foreground ml-2">
+      (até {dados.horaAtual}h - tempo real)
+    </span>
+  ) : null;
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       
@@ -81,51 +112,11 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
     return null;
   };
 
-  const renderPieLabel = ({ value }: any) => {
-    return `${value.toFixed(1)}%`;
-  };
-
-  // Função para renderizar rótulos customizados acima das barras
-  const renderCustomizedLabel = (props: any) => {
-    const { x, y, width, payload } = props;
-    
-    if (!payload) return null;
-    
-    // Determinar o valor a ser exibido
-    const displayValue = payload.isHoraFutura || !payload.temDados ? '0' : payload.disponiveis;
-    
-    // Configurações responsivas
-    const fontSize = isMobile ? 10 : 12;
-    const yOffset = isMobile ? 8 : 10;
-    const textColor = payload.isHoraFutura || !payload.temDados ? '#9ca3af' : '#1f2937';
-    
-    return (
-      <text 
-        x={x + width / 2} 
-        y={y - yOffset}
-        fill={textColor}
-        textAnchor="middle" 
-        fontSize={fontSize}
-        fontWeight="bold"
-        dominantBaseline="central"
-      >
-        {displayValue}
-      </text>
-    );
-  };
-
-  const tipoVeiculoTexto = tipoVeiculo === 'cavalos' ? 'Cavalos Mecânicos' : 'Composições';
-
-  // Informação sobre tempo real
-  const tempoRealInfo = dados.isTempoReal ? (
-    <span className="text-xs text-muted-foreground ml-2">
-      (até {dados.horaAtual}h - tempo real)
-    </span>
-  ) : null;
+  const renderPieLabel = ({ value }: any) => `${value.toFixed(1)}%`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Gráfico de Rosca - Menor */}
+      {/* Gráfico de Rosca */}
       <div className="bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-center">Disponibilidade Mecânica</h3>
         <ResponsiveContainer width="100%" height={120}>
@@ -159,25 +150,26 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
         </div>
       </div>
 
-      {/* Gráfico de Barras - Maior (3 colunas) */}
+      {/* Gráfico de Barras */}
       <div className="lg:col-span-3 bg-card border border-border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-center">
           Disponibilidade por Hora - {tipoVeiculoTexto}
           {tempoRealInfo}
         </h3>
         <ResponsiveContainer width="100%" height={isMobile ? 400 : 450}>
-          <BarChart 
-            data={barData} 
+          <BarChart
+            data={barData}
             margin={{ 
               top: isMobile ? 40 : 50, 
               right: isMobile ? 15 : 100, 
               left: isMobile ? 5 : 20, 
               bottom: isMobile ? 90 : 5 
             }}
+            barCategoryGap="10%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis 
-              dataKey="hora" 
+            <XAxis
+              dataKey="hora"
               fontSize={isMobile ? 9 : 12}
               interval={0}
               angle={isMobile ? -90 : -45}
@@ -194,8 +186,8 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
               dataKey="disponiveis" 
               radius={[4, 4, 0, 0]}
               maxBarSize={isMobile ? 20 : 40}
-              label={renderCustomizedLabel}
             >
+              <LabelList dataKey="disponiveis" content={CustomLabel} />
               {barData.map((entry, index) => {
                 // Colorir todas as barras, incluindo futuras (transparente para futuras)
                 if (entry.isHoraFutura || !entry.temDados) {
@@ -206,13 +198,13 @@ export const DisponibilidadeChart: React.FC<DisponibilidadeChartProps> = ({ dado
                 );
               })}
             </Bar>
-            <ReferenceLine 
-              y={metaValue} 
-              stroke="#ef4444" 
+            <ReferenceLine
+              y={metaValue}
+              stroke="#ef4444"
               strokeWidth={isMobile ? 2 : 3}
               strokeDasharray="none"
-              label={{ 
-                value: `Meta: ${metaValue}`, 
+              label={{
+                value: `Meta: ${metaValue}`,
                 position: isMobile ? "top" : "right",
                 fill: "#ef4444",
                 fontSize: isMobile ? 9 : 12,
